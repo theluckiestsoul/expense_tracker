@@ -1,0 +1,22 @@
+# Build output
+.build/
+DerivedData/
+build/
+
+# Xcode user-specific state
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+
+# Swift Package Manager
+.swiftpm/
+Packages/
+.package.resolved
+
+# macOS
+.DS_Store
+
+# Temporary files
+*.swp
+*~

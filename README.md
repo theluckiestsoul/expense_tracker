@@ -1,0 +1,21 @@
+# Expense Tracker
+
+A local-first iPhone expense tracker built from `iOS Expense Tracker Specification.docx` with SwiftUI, SwiftData, and Swift Charts.
+
+## Run
+
+1. Install Xcode 16 or newer with an iOS 17+ simulator.
+2. Run `make run`, or open `ExpenseTracker.xcodeproj` and run the `ExpenseTracker` scheme.
+
+## Development commands
+
+- `make check` validates the project, asset catalogs, and Swift syntax.
+- `make test` runs portable domain tests without requiring the iOS SDK.
+- `make build` compiles a simulator-compatible app without tying the build to one installed runtime.
+- `make run` launches on `iPhone 17 Pro` by default.
+- `make smoke` launches the app, captures a screenshot, and checks runtime error logs.
+- `make release` compiles the optimized Release configuration.
+- Override the device with `make run SIMULATOR='iPhone 15'`.
+- `make doctor` reports whether the required Apple tools are installed.
+
+Transactions retain their original ISO currency, while dashboard and report totals use the selected default currency. Data and preferences stay on device with SwiftData/AppStorage. CSV export uses the system share sheet. The app does not track users or transmit personal data.
