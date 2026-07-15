@@ -1,12 +1,12 @@
-# Expense Tracker Privacy Policy
+# LedgerLeaf Privacy Policy
 
 Last updated: July 15, 2026
 
-Expense Tracker is designed to work without an account. Transaction amounts, categories, notes, merchants, currencies, budgets, and preferences are stored locally on your device.
+LedgerLeaf is designed to work without an account. Transaction amounts, categories, notes, merchants, currencies, budgets, and preferences are stored locally on your device.
 
 ## Data collection
 
-Expense Tracker does not collect, transmit, sell, or share personal information. The app does not include advertising, analytics, tracking, or third-party data-collection SDKs.
+LedgerLeaf does not collect, transmit, sell, or share personal information. The app does not include advertising, analytics, tracking, or third-party data-collection SDKs.
 
 ## Data export
 
@@ -18,7 +18,7 @@ You can delete all transactions from Settings inside the app. Removing the app f
 
 ## Children
 
-Expense Tracker is a general-purpose finance utility and does not knowingly collect information from children.
+LedgerLeaf is a general-purpose finance utility and does not knowingly collect information from children.
 
 ## Changes
 
@@ -26,4 +26,4 @@ This policy may be updated when the app's features or data practices change. The
 
 ## Contact
 
-For privacy questions or support, [open an issue in the Expense Tracker repository](https://github.com/theluckiestsoul/expense_tracker/issues).
+For privacy questions or support, [open an issue in the LedgerLeaf repository](https://github.com/theluckiestsoul/expense_tracker/issues).

@@ -43,12 +43,12 @@ struct SettingsView: View {
                     Link("Privacy Policy", destination: URL(string: "https://github.com/theluckiestsoul/expense_tracker/blob/main/PRIVACY.md")!)
                 }
                 Section("About") {
-                    LabeledContent("Expense Tracker", value: version)
+                    LabeledContent("LedgerLeaf", value: version)
                     LabeledContent("Data Storage", value: "On this device")
                 }
             }.navigationTitle("Settings")
                 .onAppear { selectedCurrency = currencyCode }
-                .fileExporter(isPresented: $exporting, document: CSVDocument(text: csv), contentType: .commaSeparatedText, defaultFilename: "expense-tracker-transactions.csv") { result in
+                .fileExporter(isPresented: $exporting, document: CSVDocument(text: csv), contentType: .commaSeparatedText, defaultFilename: "ledgerleaf-transactions.csv") { result in
                     if case .failure(let error) = result { statusMessage = error.localizedDescription }
                 }
                 .confirmationDialog("Change default currency?", isPresented: $confirmingCurrency, titleVisibility: .visible) {

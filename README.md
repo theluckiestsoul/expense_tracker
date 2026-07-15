@@ -1,6 +1,6 @@
-# Expense Tracker
+# LedgerLeaf
 
-A local-first iPhone expense tracker built from `iOS Expense Tracker Specification.docx` with SwiftUI, SwiftData, and Swift Charts.
+A private, local-first iPhone money tracker built with SwiftUI, SwiftData, and Swift Charts.
 
 ## Run
 

@@ -1,16 +1,16 @@
-# Expense Tracker Support
+# LedgerLeaf Support
 
-Expense Tracker is a private, local-first iPhone app for recording income and expenses.
+LedgerLeaf is a private, local-first iPhone app for recording income and expenses.
 
 ## Common questions
 
 ### Where is my data stored?
 
-Your transactions and preferences are stored locally on your device. Expense Tracker does not require an account.
+Your transactions and preferences are stored locally on your device. LedgerLeaf does not require an account.
 
 ### How do I back up my transactions?
 
-Open Settings in Expense Tracker and choose **Export Data (CSV)**. Save the exported file somewhere you trust.
+Open Settings in LedgerLeaf and choose **Export Data (CSV)**. Save the exported file somewhere you trust.
 
 ### How do I change currency?
 

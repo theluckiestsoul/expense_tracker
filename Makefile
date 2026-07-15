@@ -1,6 +1,6 @@
 PROJECT := ExpenseTracker.xcodeproj
 SCHEME := ExpenseTracker
-BUNDLE_ID := com.example.ExpenseTracker
+BUNDLE_ID := com.theluckiestsoul.expensetracker
 DERIVED_DATA := .build/DerivedData
 SIMULATOR ?= iPhone 17 Pro
 CONFIGURATION ?= Debug

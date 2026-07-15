@@ -25,7 +25,7 @@ struct DashboardView: View {
                     HStack { metric("Today’s spending", currencyTransactions.filter { Calendar.current.isDateInToday($0.transactionDate) && $0.type == .expense }.reduce(0) { $0 + $1.amount }); metric("This month income", month.income) }
 
                     sectionHeader("Recent Transactions")
-                    if transactions.isEmpty { ContentUnavailableView("No transactions", systemImage: "tray", description: Text("Tap Add to record your first expense.")) }
+                    if transactions.isEmpty { ContentUnavailableView("No transactions", systemImage: "tray", description: Text("Tap Add to record your first transaction.")) }
                     else { ForEach(transactions.prefix(5)) { TransactionRow(transaction: $0); Divider() } }
                     if transactions.contains(where: { ($0.currencyCode ?? currencyCode) != currencyCode }) {
                         Label("Totals include \(currencyCode) transactions only.", systemImage: "info.circle").font(.footnote).foregroundStyle(.secondary)
