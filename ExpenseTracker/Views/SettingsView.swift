@@ -38,7 +38,14 @@ struct SettingsView: View {
                     Button("Export Data (CSV)") { exporting = true }.disabled(transactions.isEmpty)
                     Button("Delete All Transactions", role: .destructive) { confirmingDeleteAll = true }.disabled(transactions.isEmpty)
                 }
-                Section("About") { LabeledContent("Expense Tracker", value: "1.0") }
+                Section("Help & Legal") {
+                    Link("Support", destination: URL(string: "https://github.com/theluckiestsoul/expense_tracker/issues")!)
+                    Link("Privacy Policy", destination: URL(string: "https://github.com/theluckiestsoul/expense_tracker/blob/main/PRIVACY.md")!)
+                }
+                Section("About") {
+                    LabeledContent("Expense Tracker", value: version)
+                    LabeledContent("Data Storage", value: "On this device")
+                }
             }.navigationTitle("Settings")
                 .onAppear { selectedCurrency = currencyCode }
                 .fileExporter(isPresented: $exporting, document: CSVDocument(text: csv), contentType: .commaSeparatedText, defaultFilename: "expense-tracker-transactions.csv") { result in
@@ -58,6 +65,11 @@ struct SettingsView: View {
         let header = ["id", "amount", "currency", "type", "category", "paymentMethod", "date", "merchant", "notes", "createdAt", "updatedAt"]
         let rows = transactions.map { [$0.id.uuidString, String($0.amount), $0.currencyCode ?? currencyCode, $0.type.rawValue, $0.category.rawValue, $0.paymentMethod.rawValue, $0.transactionDate.ISO8601Format(), $0.merchant, $0.notes, $0.createdAt.ISO8601Format(), $0.updatedAt.ISO8601Format()] }
         return DomainLogic.csv(rows: [header] + rows)
+    }
+    private var version: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+        return "Version \(version) (\(build))"
     }
     private func deleteAll() {
         transactions.forEach(context.delete)
