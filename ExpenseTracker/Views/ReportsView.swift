@@ -2,15 +2,21 @@ import SwiftUI
 import SwiftData
 import Charts
 
-struct CategorySpend: Identifiable { let category: ExpenseCategory; let amount: Double; var id: String { category.id } }
+struct CategorySpend: Identifiable { let category: CategoryPresentation; let amount: Double; var id: String { category.id } }
 
 struct ReportsView: View {
     @Query private var transactions: [Transaction]
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
+    @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @State private var selectedType: TransactionType = .expense
     private var month: [Transaction] { transactions.inCurrentMonth().filter { ($0.currencyCode ?? currencyCode) == currencyCode } }
     private var selectedTransactions: [Transaction] { month.filter { $0.type == selectedType } }
-    private var categories: [CategorySpend] { Dictionary(grouping: selectedTransactions, by: \.category).map { CategorySpend(category: $0.key, amount: $0.value.reduce(0) { $0 + $1.amount }) }.sorted { $0.amount > $1.amount } }
+    private var customCategories: [CustomCategory] { CustomCategoryCatalog.decode(customCategoriesJSON) }
+    private var categories: [CategorySpend] {
+        Dictionary(grouping: selectedTransactions) { $0.categoryPresentation(customCategories: customCategories) }
+            .map { CategorySpend(category: $0.key, amount: $0.value.reduce(0) { $0 + $1.amount }) }
+            .sorted { $0.amount > $1.amount }
+    }
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -24,9 +30,9 @@ struct ReportsView: View {
                     }
                     .pickerStyle(.segmented)
                     if categories.isEmpty { ContentUnavailableView("No transactions", systemImage: "chart.pie", description: Text("Tap Add to record your first transaction.")) }
-                    else { Chart(categories) { item in SectorMark(angle: .value("Amount", item.amount), innerRadius: .ratio(0.62), angularInset: 2).foregroundStyle(by: .value("Category", item.category.displayName)) }.frame(height: 240).accessibilityLabel("Monthly spending by category") }
+                    else { Chart(categories) { item in SectorMark(angle: .value("Amount", item.amount), innerRadius: .ratio(0.62), angularInset: 2).foregroundStyle(by: .value("Category", item.category.name)) }.frame(height: 240).accessibilityLabel("Monthly spending by category") }
                     Text("Top Categories").font(.headline)
-                    ForEach(categories) { item in HStack { CategoryIcon(category: item.category); Text(item.category.displayName); Spacer(); Text(AppFormat.money(item.amount, currencyCode: currencyCode)).fontWeight(.semibold) } }
+                    ForEach(categories) { item in HStack { CategoryIcon(category: item.category); Text(item.category.name); Spacer(); Text(AppFormat.money(item.amount, currencyCode: currencyCode)).fontWeight(.semibold) } }
                 }.padding()
             }.navigationTitle("Reports")
         }

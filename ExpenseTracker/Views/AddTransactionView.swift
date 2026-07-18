@@ -5,10 +5,11 @@ struct AddTransactionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
+    @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     private let transaction: Transaction?
     @State private var type: TransactionType
     @State private var amount: String
-    @State private var category: ExpenseCategory
+    @State private var categoryID: String
     @State private var payment: PaymentMethod
     @State private var transactionCurrency: String
     @State private var date: Date
@@ -20,7 +21,7 @@ struct AddTransactionView: View {
         self.transaction = transaction
         _type = State(initialValue: transaction?.type ?? .expense)
         _amount = State(initialValue: transaction.map { String(format: "%.2f", $0.amount) } ?? "")
-        _category = State(initialValue: transaction?.category ?? .food)
+        _categoryID = State(initialValue: transaction?.categoryRaw ?? ExpenseCategory.food.rawValue)
         _payment = State(initialValue: transaction?.paymentMethod ?? .cash)
         _transactionCurrency = State(initialValue: transaction?.currencyCode ?? CurrencyCatalog.defaultCode)
         _date = State(initialValue: transaction?.transactionDate ?? .now)
@@ -32,7 +33,7 @@ struct AddTransactionView: View {
         NavigationStack {
             Form {
                 Picker("Type", selection: $type) { ForEach(TransactionType.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
-                    .onChange(of: type) { _, newType in category = ExpenseCategory.cases(for: newType)[0] }
+                    .onChange(of: type) { _, newType in categoryID = categoryOptions(for: newType).first?.id ?? ExpenseCategory.cases(for: newType)[0].rawValue }
                 Section {
                     HStack {
                         Text(transactionCurrency).font(.headline).foregroundStyle(.secondary)
@@ -41,7 +42,11 @@ struct AddTransactionView: View {
                     }
                 }
                 Section {
-                    Picker("Category", selection: $category) { ForEach(ExpenseCategory.cases(for: type)) { Label($0.displayName, systemImage: $0.symbol).tag($0) } }
+                    Picker("Category", selection: $categoryID) {
+                        ForEach(categoryOptions(for: type)) { category in
+                            Label(category.name, systemImage: category.symbol).tag(category.id)
+                        }
+                    }
                     Picker("Payment Method", selection: $payment) { ForEach(PaymentMethod.allCases) { Text($0.displayName).tag($0) } }
                     Picker("Currency", selection: $transactionCurrency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }
                     DatePicker("Date", selection: $date)
@@ -59,13 +64,19 @@ struct AddTransactionView: View {
         let cleanMerchant = DomainLogic.sanitizedText(merchant, maximumLength: 80)
         let cleanNotes = DomainLogic.sanitizedText(notes, maximumLength: 500)
         if let transaction {
-            transaction.amount = value; transaction.type = type; transaction.category = category
+            transaction.amount = value; transaction.type = type; transaction.categoryRaw = categoryID
             transaction.paymentMethod = payment; transaction.currencyCode = transactionCurrency
             transaction.transactionDate = date; transaction.merchant = cleanMerchant
             transaction.notes = cleanNotes; transaction.updatedAt = .now
         } else {
-            context.insert(Transaction(amount: value, type: type, category: category, paymentMethod: payment, currencyCode: transactionCurrency, transactionDate: date, merchant: cleanMerchant, notes: cleanNotes))
+            let newTransaction = Transaction(amount: value, type: type, category: ExpenseCategory.cases(for: type)[0], paymentMethod: payment, currencyCode: transactionCurrency, transactionDate: date, merchant: cleanMerchant, notes: cleanNotes)
+            newTransaction.categoryRaw = categoryID
+            context.insert(newTransaction)
         }
         do { try context.save(); dismiss() } catch { errorMessage = error.localizedDescription }
+    }
+
+    private func categoryOptions(for type: TransactionType) -> [CategoryPresentation] {
+        CustomCategoryCatalog.options(for: type, custom: CustomCategoryCatalog.decode(customCategoriesJSON), includeArchivedID: transaction?.categoryRaw)
     }
 }

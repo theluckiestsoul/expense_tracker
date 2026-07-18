@@ -19,6 +19,7 @@ final class ExpenseTrackerTests: XCTestCase {
         let row = [
             "42.5", "EUR", "expense", "Food & Dining", "Card",
             transactionDate.ISO8601Format(), "Cafe, Central", "He said \"hello\"",
+            "fork.knife", "indigo",
             createdAt.ISO8601Format()
         ]
         let backup = DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders, row])
@@ -27,9 +28,27 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(restored.count, 1)
         XCTAssertEqual(restored[0].amount, 42.5)
         XCTAssertEqual(restored[0].currencyCode, "EUR")
-        XCTAssertEqual(restored[0].category, .food)
+        XCTAssertEqual(restored[0].categoryRaw, ExpenseCategory.food.rawValue)
         XCTAssertEqual(restored[0].merchant, "Cafe, Central")
         XCTAssertEqual(restored[0].notes, "He said \"hello\"")
+    }
+
+    func testCustomCategoryRoundTripsThroughCSV() throws {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let row = ["10.0", "USD", "expense", "Pets", "Cash", date.ISO8601Format(), "", "",
+                   "pawprint.fill", "orange", date.ISO8601Format()]
+        let restored = try CSVBackup.importTransactions(from: DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders, row]))
+
+        XCTAssertTrue(restored.first?.categoryRaw.hasPrefix("custom:import:") == true)
+        XCTAssertEqual(restored.first?.customCategory?.name, "Pets")
+        XCTAssertEqual(restored.first?.customCategory?.symbol, "pawprint.fill")
+    }
+
+    func testLegacyCSVBackupStillImports() throws {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let row = ["10.0", "USD", "income", "Salary", "Bank Transfer", date.ISO8601Format(), "Employer", "", date.ISO8601Format()]
+        let restored = try CSVBackup.importTransactions(from: DomainLogic.csv(rows: [DomainLogic.legacyTransactionCSVHeaders, row]))
+        XCTAssertEqual(restored.first?.categoryRaw, ExpenseCategory.salary.rawValue)
     }
 
     func testCSVRestoreRejectsUnknownAndMalformedFiles() {

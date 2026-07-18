@@ -17,6 +17,10 @@ enum DomainLogic {
 
     static let transactionCSVHeaders = [
         "Amount", "Currency", "Type", "Category", "Payment Method",
+        "Transaction Date", "Merchant", "Notes", "Category Symbol", "Category Color", "Date Added"
+    ]
+    static let legacyTransactionCSVHeaders = [
+        "Amount", "Currency", "Type", "Category", "Payment Method",
         "Transaction Date", "Merchant", "Notes", "Date Added"
     ]
 

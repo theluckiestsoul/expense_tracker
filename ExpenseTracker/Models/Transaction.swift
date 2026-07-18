@@ -96,6 +96,9 @@ final class Transaction {
         }
         set { categoryRaw = newValue.rawValue }
     }
+    func categoryPresentation(customCategories: [CustomCategory]) -> CategoryPresentation {
+        CustomCategoryCatalog.presentation(for: categoryRaw, type: type, custom: customCategories)
+    }
     var paymentMethod: PaymentMethod { get { PaymentMethod(rawValue: paymentMethodRaw) ?? .upi } set { paymentMethodRaw = newValue.rawValue } }
 
     init(amount: Double, type: TransactionType, category: ExpenseCategory, paymentMethod: PaymentMethod, currencyCode: String, transactionDate: Date, merchant: String, notes: String = "") {

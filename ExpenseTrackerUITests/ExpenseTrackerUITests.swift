@@ -29,6 +29,22 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Ajustes"].exists)
     }
 
+    func testCreateCustomExpenseCategory() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-customCategoriesJSON", "[]"]
+        app.launch()
+
+        app.tabBars.buttons["Settings"].tap()
+        app.buttons["customCategoriesLink"].tap()
+        app.buttons["addCustomCategory_expense"].tap()
+        let name = app.textFields["customCategoryName"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText("Pets")
+        app.buttons["saveCustomCategory"].tap()
+        XCTAssertTrue(app.staticTexts["Pets"].waitForExistence(timeout: 5))
+    }
+
     func testPersianLocalization() {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(fa)", "-AppleLocale", "fa_IR"]

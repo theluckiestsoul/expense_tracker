@@ -17,6 +17,7 @@ struct SettingsView: View {
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(AppLanguage.storageKey) private var languageCode = ""
     @AppStorage(PrivacyLock.storageKey) private var privacyLockEnabled = false
+    @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @State private var exporting = false
     @State private var importing = false
     @State private var selectedCurrency = CurrencyCatalog.defaultCode
@@ -47,6 +48,8 @@ struct SettingsView: View {
                         get: { privacyLockEnabled },
                         set: { updatePrivacyLock($0) }
                     ))
+                    NavigationLink("Custom Categories") { CustomCategoriesView() }
+                        .accessibilityIdentifier("customCategoriesLink")
                 }
                 Section("Data & Backup") {
                     Button("Export Data (CSV)") { exporting = true }.disabled(transactions.isEmpty)
@@ -84,10 +87,12 @@ struct SettingsView: View {
         let rows = transactions
             .sorted { $0.transactionDate > $1.transactionDate }
             .map {
-                [
+                let category = $0.categoryPresentation(customCategories: CustomCategoryCatalog.decode(customCategoriesJSON))
+                return [
                     String($0.amount), $0.currencyCode ?? currencyCode,
-                    $0.type.rawValue, $0.category.rawValue, $0.paymentMethod.rawValue,
+                    $0.type.rawValue, category.isCustom ? category.name : $0.categoryRaw, $0.paymentMethod.rawValue,
                     $0.transactionDate.ISO8601Format(), $0.merchant, $0.notes,
+                    category.symbol, category.colorName,
                     $0.createdAt.ISO8601Format()
                 ]
             }
@@ -109,15 +114,21 @@ struct SettingsView: View {
         let data = try Data(contentsOf: url)
         guard let text = String(data: data, encoding: .utf8) else { throw DomainLogic.CSVError.malformed }
         let imported = try CSVBackup.importTransactions(from: text)
+        var customCategories = CustomCategoryCatalog.decode(customCategoriesJSON)
+        for category in imported.compactMap(\.customCategory) where !customCategories.contains(where: { $0.id == category.id }) {
+            customCategories.append(category)
+        }
+        customCategoriesJSON = CustomCategoryCatalog.encode(customCategories)
         var fingerprints = Set(transactions.map(backupFingerprint))
         var added = 0
 
         for record in imported where fingerprints.insert(backupFingerprint(record)).inserted {
             let transaction = Transaction(
-                amount: record.amount, type: record.type, category: record.category,
+                amount: record.amount, type: record.type, category: ExpenseCategory.cases(for: record.type)[0],
                 paymentMethod: record.paymentMethod, currencyCode: record.currencyCode,
                 transactionDate: record.transactionDate, merchant: record.merchant, notes: record.notes
             )
+            transaction.categoryRaw = record.categoryRaw
             transaction.createdAt = record.createdAt
             transaction.updatedAt = record.createdAt
             context.insert(transaction)
@@ -130,21 +141,22 @@ struct SettingsView: View {
     }
 
     private func backupFingerprint(_ transaction: Transaction) -> String {
-        backupFingerprint(.init(
-            amount: transaction.amount, currencyCode: transaction.currencyCode ?? currencyCode,
-            type: transaction.type, category: transaction.category, paymentMethod: transaction.paymentMethod,
-            transactionDate: transaction.transactionDate, merchant: transaction.merchant,
-            notes: transaction.notes, createdAt: transaction.createdAt
-        ))
+        backupFingerprint(amount: transaction.amount, currency: transaction.currencyCode ?? currencyCode,
+                          type: transaction.type, categoryRaw: transaction.categoryRaw, payment: transaction.paymentMethod,
+                          transactionDate: transaction.transactionDate, merchant: transaction.merchant,
+                          notes: transaction.notes, createdAt: transaction.createdAt)
     }
 
     private func backupFingerprint(_ transaction: CSVBackup.ImportedTransaction) -> String {
-        DomainLogic.csv(rows: [[
-            String(transaction.amount), transaction.currencyCode, transaction.type.rawValue,
-            transaction.category.rawValue, transaction.paymentMethod.rawValue,
-            transaction.transactionDate.ISO8601Format(), transaction.merchant,
-            transaction.notes, transaction.createdAt.ISO8601Format()
-        ]])
+        backupFingerprint(amount: transaction.amount, currency: transaction.currencyCode,
+                          type: transaction.type, categoryRaw: transaction.categoryRaw, payment: transaction.paymentMethod,
+                          transactionDate: transaction.transactionDate, merchant: transaction.merchant,
+                          notes: transaction.notes, createdAt: transaction.createdAt)
+    }
+
+    private func backupFingerprint(amount: Double, currency: String, type: TransactionType, categoryRaw: String, payment: PaymentMethod, transactionDate: Date, merchant: String, notes: String, createdAt: Date) -> String {
+        DomainLogic.csv(rows: [[String(amount), currency, type.rawValue, categoryRaw, payment.rawValue,
+                                transactionDate.ISO8601Format(), merchant, notes, createdAt.ISO8601Format()]])
     }
 
     private func showError(_ error: Error) {

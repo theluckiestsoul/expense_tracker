@@ -4,12 +4,14 @@ import SwiftData
 struct TransactionsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Transaction.transactionDate, order: .reverse) private var all: [Transaction]
+    @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @State private var filter: TransactionType?
     @State private var search = ""
     @State private var editing: Transaction?
     @State private var pendingDeletion: [Transaction] = []
     @State private var errorMessage: String?
-    private var shown: [Transaction] { all.filter { (filter == nil || $0.type == filter) && (search.isEmpty || $0.merchant.localizedCaseInsensitiveContains(search) || $0.category.displayName.localizedCaseInsensitiveContains(search)) } }
+    private var customCategories: [CustomCategory] { CustomCategoryCatalog.decode(customCategoriesJSON) }
+    private var shown: [Transaction] { all.filter { (filter == nil || $0.type == filter) && (search.isEmpty || $0.merchant.localizedCaseInsensitiveContains(search) || $0.categoryPresentation(customCategories: customCategories).name.localizedCaseInsensitiveContains(search)) } }
 
     var body: some View {
         NavigationStack {
