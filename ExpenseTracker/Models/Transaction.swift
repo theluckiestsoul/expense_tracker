@@ -6,8 +6,8 @@ enum TransactionType: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var title: String {
         switch self {
-        case .expense: String(localized: "Expense")
-        case .income: String(localized: "Income")
+        case .expense: AppLanguage.localized("Expense")
+        case .income: AppLanguage.localized("Income")
         }
     }
 }
@@ -26,21 +26,21 @@ enum ExpenseCategory: String, Codable, CaseIterable, Identifiable {
     var isIncome: Bool { Self.incomeCases.contains(self) }
     var displayName: String {
         switch self {
-        case .food: String(localized: "Food & Dining")
-        case .travel: String(localized: "Travel")
-        case .shopping: String(localized: "Shopping")
-        case .bills: String(localized: "Bills & Utilities")
-        case .health: String(localized: "Health")
-        case .entertainment: String(localized: "Entertainment")
-        case .education: String(localized: "Education")
-        case .other: String(localized: "Other Expense")
-        case .salary: String(localized: "Salary")
-        case .freelance: String(localized: "Freelance")
-        case .business: String(localized: "Business")
-        case .investments: String(localized: "Investments")
-        case .gifts: String(localized: "Gifts")
-        case .refund: String(localized: "Refund")
-        case .otherIncome: String(localized: "Other Income")
+        case .food: AppLanguage.localized("Food & Dining")
+        case .travel: AppLanguage.localized("Travel")
+        case .shopping: AppLanguage.localized("Shopping")
+        case .bills: AppLanguage.localized("Bills & Utilities")
+        case .health: AppLanguage.localized("Health")
+        case .entertainment: AppLanguage.localized("Entertainment")
+        case .education: AppLanguage.localized("Education")
+        case .other: AppLanguage.localized("Other Expense")
+        case .salary: AppLanguage.localized("Salary")
+        case .freelance: AppLanguage.localized("Freelance")
+        case .business: AppLanguage.localized("Business")
+        case .investments: AppLanguage.localized("Investments")
+        case .gifts: AppLanguage.localized("Gifts")
+        case .refund: AppLanguage.localized("Refund")
+        case .otherIncome: AppLanguage.localized("Other Income")
         }
     }
     var symbol: String {
@@ -61,13 +61,13 @@ enum PaymentMethod: String, Codable, CaseIterable, Identifiable {
     var id: String { rawValue }
     var displayName: String {
         switch self {
-        case .cash: String(localized: "Cash")
-        case .card: String(localized: "Card")
-        case .bank: String(localized: "Bank Transfer")
-        case .mobileWallet: String(localized: "Mobile Wallet")
-        case .upi: String(localized: "UPI")
-        case .cheque: String(localized: "Cheque")
-        case .other: String(localized: "Other")
+        case .cash: AppLanguage.localized("Cash")
+        case .card: AppLanguage.localized("Card")
+        case .bank: AppLanguage.localized("Bank Transfer")
+        case .mobileWallet: AppLanguage.localized("Mobile Wallet")
+        case .upi: AppLanguage.localized("UPI")
+        case .cheque: AppLanguage.localized("Cheque")
+        case .other: AppLanguage.localized("Other")
         }
     }
 }

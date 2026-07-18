@@ -73,3 +73,5 @@
 "Couldn’t Delete" = "No se pudo eliminar";
 "Unknown error" = "Error desconocido";
 "This action can’t be undone." = "Esta acción no se puede deshacer.";
+"App Language" = "Idioma de la aplicación";
+"System Default" = "Valor predeterminado del sistema";

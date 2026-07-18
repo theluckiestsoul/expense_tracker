@@ -73,3 +73,5 @@
 "Couldn’t Delete" = "ডিলিট করা যায়নি";
 "Unknown error" = "অজানা ত্রুটি";
 "This action can’t be undone." = "এই ক্রিয়াটি পূর্বাবস্থায় ফেরানো যাবে না।";
+"App Language" = "অ্যাপের ভাষা";
+"System Default" = "সিস্টেম ডিফল্ট";

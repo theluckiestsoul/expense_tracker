@@ -15,6 +15,7 @@ struct SettingsView: View {
     @Query private var transactions: [Transaction]
     @AppStorage("monthlyBudget") private var budget = 30000.0
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
+    @AppStorage(AppLanguage.storageKey) private var languageCode = ""
     @State private var exporting = false
     @State private var selectedCurrency = CurrencyCatalog.defaultCode
     @State private var proposedCurrency: String?
@@ -25,6 +26,12 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Preferences") {
+                    Picker("App Language", selection: $languageCode) {
+                        ForEach(AppLanguage.supported) { language in
+                            if language.code.isEmpty { Text("System Default").tag(language.code) }
+                            else { Text(language.name).tag(language.code) }
+                        }
+                    }
                     TextField("Monthly Budget", value: $budget, format: .number).keyboardType(.decimalPad)
                     Picker("Default Currency", selection: $selectedCurrency) {
                         ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) }
@@ -44,7 +51,7 @@ struct SettingsView: View {
                 }
                 Section("About") {
                     LabeledContent("LedgerLeaf", value: version)
-                    LabeledContent("Data Storage", value: String(localized: "On this device"))
+                    LabeledContent("Data Storage", value: AppLanguage.localized("On this device"))
                 }
             }.navigationTitle("Settings")
                 .onAppear { selectedCurrency = currencyCode }

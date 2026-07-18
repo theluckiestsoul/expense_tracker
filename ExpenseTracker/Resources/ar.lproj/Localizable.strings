@@ -73,3 +73,5 @@
 "Couldn’t Delete" = "تعذّر الحذف";
 "Unknown error" = "خطأ غير معروف";
 "This action can’t be undone." = "لا يمكن التراجع عن هذا الإجراء.";
+"App Language" = "لغة التطبيق";
+"System Default" = "النظام الافتراضي";

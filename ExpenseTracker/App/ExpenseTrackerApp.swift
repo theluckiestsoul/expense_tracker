@@ -3,8 +3,15 @@ import SwiftData
 
 @main
 struct ExpenseTrackerApp: App {
+    @AppStorage(AppLanguage.storageKey) private var languageCode = ""
+
     var body: some Scene {
-        WindowGroup { RootView() }
+        WindowGroup {
+            RootView()
+                .environment(\.locale, AppLanguage.locale(for: languageCode))
+                .environment(\.layoutDirection, AppLanguage.isRightToLeft(languageCode) ? .rightToLeft : .leftToRight)
+                .id(languageCode)
+        }
             .modelContainer(for: Transaction.self)
     }
 }

@@ -48,14 +48,14 @@ struct AddTransactionView: View {
                     TextField("Merchant / description", text: $merchant).textInputAutocapitalization(.words)
                     TextField("Notes (optional)", text: $notes, axis: .vertical).lineLimit(2...5)
                 }
-            }.navigationTitle(transaction == nil ? String(localized: "Add Transaction") : String(localized: "Edit Transaction")).navigationBarTitleDisplayMode(.inline)
+            }.navigationTitle(transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction")).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveTransactionButton") } }
                 .alert("Couldn’t Save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
                 .onAppear { if transaction == nil { transactionCurrency = currencyCode } }
         }
     }
     private func save() {
-        guard let value = DomainLogic.parseAmount(amount) else { errorMessage = String(localized: "Enter a valid amount greater than zero."); return }
+        guard let value = DomainLogic.parseAmount(amount) else { errorMessage = AppLanguage.localized("Enter a valid amount greater than zero."); return }
         let cleanMerchant = DomainLogic.sanitizedText(merchant, maximumLength: 80)
         let cleanNotes = DomainLogic.sanitizedText(notes, maximumLength: 500)
         if let transaction {

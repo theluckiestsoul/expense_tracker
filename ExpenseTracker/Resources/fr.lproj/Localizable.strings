@@ -73,3 +73,5 @@
 "Couldn’t Delete" = "Suppression impossible";
 "Unknown error" = "Erreur inconnue";
 "This action can’t be undone." = "Cette action est irréversible.";
+"App Language" = "Langue de l'application";
+"System Default" = "Système par défaut";
