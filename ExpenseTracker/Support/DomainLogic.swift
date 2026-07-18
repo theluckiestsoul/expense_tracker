@@ -1,6 +1,11 @@
 import Foundation
 
 enum DomainLogic {
+    static let transactionCSVHeaders = [
+        "Amount", "Currency", "Type", "Category", "Payment Method",
+        "Transaction Date", "Merchant", "Notes", "Date Added"
+    ]
+
     static func parseAmount(_ input: String, decimalSeparator: String = Locale.current.decimalSeparator ?? ".") -> Double? {
         let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }

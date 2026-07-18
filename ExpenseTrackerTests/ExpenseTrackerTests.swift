@@ -8,6 +8,9 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(DomainLogic.parseAmount("42,50", decimalSeparator: ","), 42.5)
         XCTAssertNil(DomainLogic.parseAmount("-1", decimalSeparator: "."))
         XCTAssertEqual(DomainLogic.csv(rows: [["a,b", "c\"d"]]), "\"a,b\",\"c\"\"d\"")
+        XCTAssertEqual(DomainLogic.transactionCSVHeaders.last, "Date Added")
+        XCTAssertFalse(DomainLogic.transactionCSVHeaders.contains("id"))
+        XCTAssertFalse(DomainLogic.transactionCSVHeaders.contains("updatedAt"))
     }
 
     func testCategorySetsNeverOverlap() {

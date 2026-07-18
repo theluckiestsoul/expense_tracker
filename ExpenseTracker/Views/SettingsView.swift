@@ -62,9 +62,17 @@ struct SettingsView: View {
         }
     }
     private var csv: String {
-        let header = ["id", "amount", "currency", "type", "category", "paymentMethod", "date", "merchant", "notes", "createdAt", "updatedAt"]
-        let rows = transactions.map { [$0.id.uuidString, String($0.amount), $0.currencyCode ?? currencyCode, $0.type.rawValue, $0.category.rawValue, $0.paymentMethod.rawValue, $0.transactionDate.ISO8601Format(), $0.merchant, $0.notes, $0.createdAt.ISO8601Format(), $0.updatedAt.ISO8601Format()] }
-        return DomainLogic.csv(rows: [header] + rows)
+        let rows = transactions
+            .sorted { $0.transactionDate > $1.transactionDate }
+            .map {
+                [
+                    String($0.amount), $0.currencyCode ?? currencyCode,
+                    $0.type.rawValue, $0.category.rawValue, $0.paymentMethod.rawValue,
+                    $0.transactionDate.ISO8601Format(), $0.merchant, $0.notes,
+                    $0.createdAt.ISO8601Format()
+                ]
+            }
+        return DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders] + rows)
     }
     private var version: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
