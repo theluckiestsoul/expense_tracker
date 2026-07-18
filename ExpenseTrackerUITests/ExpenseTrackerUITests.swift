@@ -28,4 +28,26 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Informes"].exists)
         XCTAssertTrue(app.buttons["Ajustes"].exists)
     }
+
+    func testPersianLocalization() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(fa)", "-AppleLocale", "fa_IR"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["داشبورد"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["معاملات"].exists)
+        XCTAssertTrue(app.buttons["گزارش ها"].exists)
+        XCTAssertTrue(app.buttons["تنظیمات"].exists)
+    }
+
+    func testBengaliLocalization() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(bn)", "-AppleLocale", "bn_IN"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["ড্যাশবোর্ড"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["লেনদেন"].exists)
+        XCTAssertTrue(app.buttons["রিপোর্ট"].exists)
+        XCTAssertTrue(app.buttons["সেটিংস"].exists)
+    }
 }

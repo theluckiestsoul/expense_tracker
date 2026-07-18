@@ -2,7 +2,7 @@
 
 A private, local-first iPhone money tracker built with SwiftUI, SwiftData, and Swift Charts.
 
-The interface automatically follows the user's supported iOS language. Current localizations are English, Hindi, Spanish, French, Brazilian Portuguese, Simplified Chinese, and Arabic; English is used as the fallback for other languages.
+The interface automatically follows the user's supported iOS language. Current localizations are English, Persian, Spanish, French, Brazilian Portuguese, Simplified Chinese, Arabic, and all 22 scheduled languages of India: Assamese, Bengali, Bodo, Dogri, Gujarati, Hindi, Kannada, Kashmiri, Konkani, Maithili, Malayalam, Manipuri, Marathi, Nepali, Odia, Punjabi, Sanskrit, Santali, Sindhi, Tamil, Telugu, and Urdu. English is used as the fallback for other languages. Bodo currently uses the Hindi fallback and Kashmiri uses the Urdu fallback until native translations are available.
 
 ## Run
 
