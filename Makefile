@@ -28,6 +28,7 @@ check:
 	@plutil -lint $(PROJECT)/project.pbxproj
 	@find ExpenseTracker -name Contents.json -print0 | xargs -0 -n1 jq empty
 	@find ExpenseTracker -name '*.strings' -print0 | xargs -0 -n1 plutil -lint
+	@python3 Scripts/check_localizations.py
 	@swiftc -frontend -parse $$(find ExpenseTracker -name '*.swift' -print)
 	@echo "Static checks passed"
 

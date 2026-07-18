@@ -186,8 +186,6 @@
 				ta,
 				ur,
 				te,
-				ks,
-				brx,
 			);
 			mainGroup = A00000000000000000000001;
 			productRefGroup = A00000000000000000000001;

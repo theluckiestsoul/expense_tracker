@@ -10,10 +10,10 @@ struct AppLanguage: Identifiable, Hashable {
     static let supported: [AppLanguage] = [
         .init(code: "", name: "System Default"),
         .init(code: "en", name: "English"), .init(code: "as", name: "অসমীয়া"),
-        .init(code: "bn", name: "বাংলা"), .init(code: "brx", name: "बड़ो"),
+        .init(code: "bn", name: "বাংলা"),
         .init(code: "doi", name: "डोगरी"), .init(code: "gu", name: "ગુજરાતી"),
         .init(code: "hi", name: "हिन्दी"), .init(code: "kn", name: "ಕನ್ನಡ"),
-        .init(code: "ks", name: "کٲشُر"), .init(code: "kok", name: "कोंकणी"),
+        .init(code: "kok", name: "कोंकणी"),
         .init(code: "mai", name: "मैथिली"), .init(code: "ml", name: "മലയാളം"),
         .init(code: "mni", name: "ꯃꯤꯇꯩ ꯂꯣꯟ"), .init(code: "mr", name: "मराठी"),
         .init(code: "ne", name: "नेपाली"), .init(code: "or", name: "ଓଡ଼ିଆ"),
@@ -32,7 +32,7 @@ struct AppLanguage: Identifiable, Hashable {
 
     static func isRightToLeft(_ code: String) -> Bool {
         let effectiveCode = code.isEmpty ? (Locale.preferredLanguages.first ?? "en") : code
-        return ["ar", "fa", "ks", "sd", "ur"].contains { effectiveCode.hasPrefix($0) }
+        return ["ar", "fa", "sd", "ur"].contains { effectiveCode.hasPrefix($0) }
     }
 
     static func localized(_ key: String) -> String {

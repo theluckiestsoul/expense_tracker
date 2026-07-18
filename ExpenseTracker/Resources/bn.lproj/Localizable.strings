@@ -25,9 +25,9 @@
 "Bank Transfer" = "ব্যাঙ্ক ট্রান্সফার";
 "Mobile Wallet" = "মোবাইল ওয়ালেট";
 "UPI" = "ইউপিআই";
-"Cheque" = "চেক করুন";
+"Cheque" = "চেক";
 "Other" = "অন্যান্য";
-"Type" = "টাইপ";
+"Type" = "ধরন";
 "Category" = "শ্রেণী";
 "Payment Method" = "পেমেন্ট পদ্ধতি";
 "Currency" = "মুদ্রা";

@@ -25,15 +25,15 @@
 "Bank Transfer" = "बैंक स्थानान्तरण";
 "Mobile Wallet" = "मोबाइल बटुआ";
 "UPI" = "उपी";
-"Cheque" = "जाँच";
-"Other" = "अन्ये";
+"Cheque" = "धनादेशः";
+"Other" = "अन्यत्";
 "Type" = "प्रकारः";
 "Category" = "श्रेणी";
 "Payment Method" = "भुगतान विधि";
 "Currency" = "मुद्रा";
 "Date" = "तिथि";
 "Merchant / description" = "वणिक् / वर्णनम्";
-"Notes (optional)" = "टिप्पणियाँ (वैकल्पिकम्) २.";
+"Notes (optional)" = "टिप्पणी (वैकल्पिकी)";
 "Add Transaction" = "लेनदेनं योजयतु";
 "Edit Transaction" = "व्यवहारः सम्पादयतु";
 "Cancel" = "रद्दं कुर्वन्तु";
@@ -57,7 +57,7 @@
 "Monthly Budget" = "मासिक बजट";
 "Default Currency" = "पूर्वनिर्धारित मुद्रा";
 "Data & Backup" = "डाटा एवं बैकअप";
-"Export Data (CSV)" = "निर्यातदत्तांशः (CSV) २.";
+"Export Data (CSV)" = "दत्तांशं निर्यातयतु (CSV)";
 "Delete All Transactions" = "सर्वे व्यवहाराः विलोपयन्तु";
 "Help & Legal" = "सहायता एवं कानूनी";
 "Support" = "समर्थनम्";
@@ -75,7 +75,7 @@
 "This action can’t be undone." = "एतत् कर्म न निवर्तयितुं शक्यते ।";
 "App Language" = "एप् भाषा";
 "System Default" = "प्रणाली पूर्वनिर्धारित";
-"Import Data (CSV)" = "आयातदत्तांशः (CSV) ९.";
+"Import Data (CSV)" = "दत्तांशम् आयातयतु (CSV)";
 "Import Complete" = "आयात सम्पूर्ण";
 "Privacy Lock" = "गोपनीयता ताला";
 "LedgerLeaf Locked" = "LedgerLeaf Locked इति";

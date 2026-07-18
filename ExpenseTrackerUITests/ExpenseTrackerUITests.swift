@@ -50,4 +50,15 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.buttons["রিপোর্ট"].exists)
         XCTAssertTrue(app.buttons["সেটিংস"].exists)
     }
+
+    func testOdiaLocalization() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(or)", "-AppleLocale", "or_IN"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["ଡ୍ୟାସବୋର୍ଡ"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["କାରବାର"].exists)
+        XCTAssertTrue(app.buttons["ରିପୋର୍ଟ"].exists)
+        XCTAssertTrue(app.buttons["ସେଟିଂସ୍"].exists)
+    }
 }

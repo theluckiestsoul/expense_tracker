@@ -25,7 +25,7 @@
 "Bank Transfer" = "बैंक स्थानांतरण";
 "Mobile Wallet" = "मोबाइल बटुआ";
 "UPI" = "यूपीआई";
-"Cheque" = "जाँच करू";
+"Cheque" = "चेक";
 "Other" = "अन्य";
 "Type" = "प्रकार";
 "Category" = "श्रेणी";
@@ -33,7 +33,7 @@
 "Currency" = "मुद्रा";
 "Date" = "तिथि";
 "Merchant / description" = "व्यापारी / विवरण";
-"Notes (optional)" = "टिप्पणियाँ (वैकल्पिक) २.";
+"Notes (optional)" = "टिप्पणी (वैकल्पिक)";
 "Add Transaction" = "लेनदेन जोड़ू";
 "Edit Transaction" = "लेनदेन संपादित करू";
 "Cancel" = "रद्द करू";
@@ -57,7 +57,7 @@
 "Monthly Budget" = "मासिक बजट";
 "Default Currency" = "डिफ़ॉल्ट मुद्रा";
 "Data & Backup" = "डाटा एवं बैकअप";
-"Export Data (CSV)" = "निर्यात डाटा (सीएसवी) 1.1.";
+"Export Data (CSV)" = "डाटा निर्यात करू (CSV)";
 "Delete All Transactions" = "सब लेनदेन मेटा दियौ";
 "Help & Legal" = "मदद एवं कानूनी";
 "Support" = "समर्थन";
@@ -75,7 +75,7 @@
 "This action can’t be undone." = "ई क्रिया पूर्ववत नहि भ’ सकैत अछि.";
 "App Language" = "ऐप भाषा";
 "System Default" = "सिस्टम डिफ़ॉल्ट";
-"Import Data (CSV)" = "आयात डाटा (सीएसवी) २.";
+"Import Data (CSV)" = "डाटा आयात करू (CSV)";
 "Import Complete" = "आयात पूरा";
 "Privacy Lock" = "गोपनीयता ताला";
 "LedgerLeaf Locked" = "लेजरलीफ लॉक";
