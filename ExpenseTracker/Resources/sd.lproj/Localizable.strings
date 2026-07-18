@@ -75,3 +75,10 @@
 "This action can’t be undone." = "ھن عمل کي رد نٿو ڪري سگھجي.";
 "App Language" = "ايپ جي ٻولي";
 "System Default" = "سسٽم ڊفالٽ";
+"Import Data (CSV)" = "ڊيٽا درآمد ڪريو (CSV)";
+"Import Complete" = "درآمد مڪمل";
+"Privacy Lock" = "رازداري تالا";
+"LedgerLeaf Locked" = "LedgerLeaf بند ٿيل";
+"Authenticate to view your financial data." = "توهان جي مالي ڊيٽا کي ڏسڻ لاء تصديق ڪريو.";
+"Unlock" = "لاڪ";
+"Couldn’t Unlock" = "ان لاڪ نه ٿي سگهيو";

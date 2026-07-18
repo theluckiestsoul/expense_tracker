@@ -75,3 +75,10 @@
 "This action can’t be undone." = "لا يمكن التراجع عن هذا الإجراء.";
 "App Language" = "لغة التطبيق";
 "System Default" = "النظام الافتراضي";
+"Import Data (CSV)" = "استيراد البيانات (CSV)";
+"Import Complete" = "اكتمل الاستيراد";
+"Privacy Lock" = "قفل الخصوصية";
+"LedgerLeaf Locked" = "LedgerLeaf مغلق";
+"Authenticate to view your financial data." = "قم بالمصادقة لعرض بياناتك المالية.";
+"Unlock" = "فتح";
+"Couldn’t Unlock" = "تعذر فتح القفل";

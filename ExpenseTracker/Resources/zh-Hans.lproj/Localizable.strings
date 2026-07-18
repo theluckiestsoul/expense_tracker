@@ -75,3 +75,10 @@
 "This action can’t be undone." = "此操作无法撤销。";
 "App Language" = "应用程序语言";
 "System Default" = "系统默认值";
+"Import Data (CSV)" = "导入数据 (CSV)";
+"Import Complete" = "导入完成";
+"Privacy Lock" = "隐私锁";
+"LedgerLeaf Locked" = "LedgerLeaf 锁定";
+"Authenticate to view your financial data." = "进行身份验证以查看您的财务数据。";
+"Unlock" = "解锁";
+"Couldn’t Unlock" = "无法解锁";

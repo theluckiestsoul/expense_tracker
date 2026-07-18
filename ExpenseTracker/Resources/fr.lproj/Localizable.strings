@@ -75,3 +75,10 @@
 "This action can’t be undone." = "Cette action est irréversible.";
 "App Language" = "Langue de l'application";
 "System Default" = "Système par défaut";
+"Import Data (CSV)" = "Importer des données (CSV)";
+"Import Complete" = "Importation terminée";
+"Privacy Lock" = "Verrouillage de la confidentialité";
+"LedgerLeaf Locked" = "LedgerFeuille verrouillée";
+"Authenticate to view your financial data." = "Authentifiez-vous pour consulter vos données financières.";
+"Unlock" = "Déverrouiller";
+"Couldn’t Unlock" = "Impossible de débloquer";

@@ -75,3 +75,10 @@
 "This action can’t be undone." = "यो कार्य अन्डू गर्न सकिँदैन।";
 "App Language" = "एप भाषा";
 "System Default" = "प्रणाली पूर्वनिर्धारित";
+"Import Data (CSV)" = "आयात डाटा (CSV)";
+"Import Complete" = "आयात पूरा भयो";
+"Privacy Lock" = "गोपनीयता लक";
+"LedgerLeaf Locked" = "LedgerLeaf लक";
+"Authenticate to view your financial data." = "आफ्नो वित्तीय डेटा हेर्न प्रमाणीकरण गर्नुहोस्।";
+"Unlock" = "अनलक गर्नुहोस्";
+"Couldn’t Unlock" = "अनलक गर्न सकिएन";

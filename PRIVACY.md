@@ -1,6 +1,6 @@
 # LedgerLeaf Privacy Policy
 
-Last updated: July 15, 2026
+Last updated: July 18, 2026
 
 LedgerLeaf is designed to work without an account. Transaction amounts, categories, notes, merchants, currencies, budgets, and preferences are stored locally on your device.
 
@@ -11,6 +11,12 @@ LedgerLeaf does not collect, transmit, sell, or share personal information. The 
 ## Data export
 
 You may export your transaction data as a CSV file. The file is sent only to the destination you select through Apple's system share and file interfaces. You are responsible for protecting exported files.
+
+You may also select a LedgerLeaf CSV backup to restore transactions. The selected file is processed locally and is not uploaded or transmitted by LedgerLeaf.
+
+## Privacy lock
+
+If you enable Privacy Lock, LedgerLeaf asks iOS to authenticate you with Face ID, Touch ID, or the device passcode. Authentication is performed by the operating system. LedgerLeaf does not receive or store biometric information.
 
 ## Data deletion
 

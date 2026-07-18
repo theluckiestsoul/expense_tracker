@@ -75,3 +75,10 @@
 "This action can’t be undone." = "ఈ చర్య రద్దు చేయబడదు.";
 "App Language" = "యాప్ భాష";
 "System Default" = "సిస్టమ్ డిఫాల్ట్";
+"Import Data (CSV)" = "దిగుమతి డేటా (CSV)";
+"Import Complete" = "దిగుమతి పూర్తయింది";
+"Privacy Lock" = "గోప్యతా లాక్";
+"LedgerLeaf Locked" = "లెడ్జర్‌లీఫ్ లాక్ చేయబడింది";
+"Authenticate to view your financial data." = "మీ ఆర్థిక డేటాను వీక్షించడానికి ప్రమాణీకరించండి.";
+"Unlock" = "అన్‌లాక్ చేయండి";
+"Couldn’t Unlock" = "అన్‌లాక్ చేయడం సాధ్యపడలేదు";

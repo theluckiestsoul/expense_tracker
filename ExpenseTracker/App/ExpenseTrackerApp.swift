@@ -7,7 +7,7 @@ struct ExpenseTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
+            SecureRootView()
                 .environment(\.locale, AppLanguage.locale(for: languageCode))
                 .environment(\.layoutDirection, AppLanguage.isRightToLeft(languageCode) ? .rightToLeft : .leftToRight)
                 .id(languageCode)

@@ -16,12 +16,15 @@ struct SettingsView: View {
     @AppStorage("monthlyBudget") private var budget = 30000.0
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(AppLanguage.storageKey) private var languageCode = ""
+    @AppStorage(PrivacyLock.storageKey) private var privacyLockEnabled = false
     @State private var exporting = false
+    @State private var importing = false
     @State private var selectedCurrency = CurrencyCatalog.defaultCode
     @State private var proposedCurrency: String?
     @State private var confirmingCurrency = false
     @State private var confirmingDeleteAll = false
     @State private var statusMessage: String?
+    @State private var statusTitle = "Something Went Wrong"
     var body: some View {
         NavigationStack {
             Form {
@@ -40,9 +43,14 @@ struct SettingsView: View {
                         if transactions.isEmpty { currencyCode = newValue }
                         else { proposedCurrency = newValue; confirmingCurrency = true; selectedCurrency = oldValue }
                     }
+                    Toggle("Privacy Lock", isOn: Binding(
+                        get: { privacyLockEnabled },
+                        set: { updatePrivacyLock($0) }
+                    ))
                 }
                 Section("Data & Backup") {
                     Button("Export Data (CSV)") { exporting = true }.disabled(transactions.isEmpty)
+                    Button("Import Data (CSV)") { importing = true }
                     Button("Delete All Transactions", role: .destructive) { confirmingDeleteAll = true }.disabled(transactions.isEmpty)
                 }
                 Section("Help & Legal") {
@@ -56,7 +64,11 @@ struct SettingsView: View {
             }.navigationTitle("Settings")
                 .onAppear { selectedCurrency = currencyCode }
                 .fileExporter(isPresented: $exporting, document: CSVDocument(text: csv), contentType: .commaSeparatedText, defaultFilename: "ledgerleaf-transactions.csv") { result in
-                    if case .failure(let error) = result { statusMessage = error.localizedDescription }
+                    if case .failure(let error) = result { showError(error) }
+                }
+                .fileImporter(isPresented: $importing, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
+                    do { try importCSV(from: result.get()) }
+                    catch { showError(error) }
                 }
                 .confirmationDialog("Change default currency?", isPresented: $confirmingCurrency, titleVisibility: .visible) {
                     Button("Use \(proposedCurrency ?? currencyCode)") { if let proposedCurrency { currencyCode = proposedCurrency; selectedCurrency = proposedCurrency }; self.proposedCurrency = nil }
@@ -65,7 +77,7 @@ struct SettingsView: View {
                 .confirmationDialog("Delete all transactions?", isPresented: $confirmingDeleteAll, titleVisibility: .visible) {
                     Button("Delete All", role: .destructive, action: deleteAll); Button("Cancel", role: .cancel) {}
                 } message: { Text("This permanently deletes \(transactions.count) transaction\(transactions.count == 1 ? "" : "s"). Export a backup first if needed.") }
-                .alert("Something Went Wrong", isPresented: Binding(get: { statusMessage != nil }, set: { if !$0 { statusMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(statusMessage ?? "Unknown error") }
+                .alert(statusTitle, isPresented: Binding(get: { statusMessage != nil }, set: { if !$0 { statusMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(statusMessage ?? "Unknown error") }
         }
     }
     private var csv: String {
@@ -88,6 +100,66 @@ struct SettingsView: View {
     }
     private func deleteAll() {
         transactions.forEach(context.delete)
-        do { try context.save() } catch { context.rollback(); statusMessage = error.localizedDescription }
+        do { try context.save() } catch { context.rollback(); showError(error) }
+    }
+
+    private func importCSV(from url: URL) throws {
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        let data = try Data(contentsOf: url)
+        guard let text = String(data: data, encoding: .utf8) else { throw DomainLogic.CSVError.malformed }
+        let imported = try CSVBackup.importTransactions(from: text)
+        var fingerprints = Set(transactions.map(backupFingerprint))
+        var added = 0
+
+        for record in imported where fingerprints.insert(backupFingerprint(record)).inserted {
+            let transaction = Transaction(
+                amount: record.amount, type: record.type, category: record.category,
+                paymentMethod: record.paymentMethod, currencyCode: record.currencyCode,
+                transactionDate: record.transactionDate, merchant: record.merchant, notes: record.notes
+            )
+            transaction.createdAt = record.createdAt
+            transaction.updatedAt = record.createdAt
+            context.insert(transaction)
+            added += 1
+        }
+        do { try context.save() }
+        catch { context.rollback(); throw error }
+        statusTitle = "Import Complete"
+        statusMessage = "Imported \(added) transaction\(added == 1 ? "" : "s"). Skipped \(imported.count - added) duplicate\(imported.count - added == 1 ? "" : "s")."
+    }
+
+    private func backupFingerprint(_ transaction: Transaction) -> String {
+        backupFingerprint(.init(
+            amount: transaction.amount, currencyCode: transaction.currencyCode ?? currencyCode,
+            type: transaction.type, category: transaction.category, paymentMethod: transaction.paymentMethod,
+            transactionDate: transaction.transactionDate, merchant: transaction.merchant,
+            notes: transaction.notes, createdAt: transaction.createdAt
+        ))
+    }
+
+    private func backupFingerprint(_ transaction: CSVBackup.ImportedTransaction) -> String {
+        DomainLogic.csv(rows: [[
+            String(transaction.amount), transaction.currencyCode, transaction.type.rawValue,
+            transaction.category.rawValue, transaction.paymentMethod.rawValue,
+            transaction.transactionDate.ISO8601Format(), transaction.merchant,
+            transaction.notes, transaction.createdAt.ISO8601Format()
+        ]])
+    }
+
+    private func showError(_ error: Error) {
+        statusTitle = "Something Went Wrong"
+        statusMessage = error.localizedDescription
+    }
+
+    private func updatePrivacyLock(_ enabled: Bool) {
+        guard enabled else { privacyLockEnabled = false; return }
+        Task { @MainActor in
+            do {
+                if try await PrivacyLock.authenticate(reason: "Enable privacy lock for LedgerLeaf.") {
+                    privacyLockEnabled = true
+                }
+            } catch { showError(error) }
+        }
     }
 }

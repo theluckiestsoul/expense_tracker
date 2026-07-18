@@ -1,6 +1,20 @@
 import Foundation
 
 enum DomainLogic {
+    enum CSVError: LocalizedError, Equatable {
+        case malformed
+        case invalidHeaders
+        case invalidRow(Int)
+
+        var errorDescription: String? {
+            switch self {
+            case .malformed: "The CSV file is malformed."
+            case .invalidHeaders: "This file is not a LedgerLeaf CSV backup."
+            case .invalidRow(let row): "Transaction row \(row) contains invalid data."
+            }
+        }
+    }
+
     static let transactionCSVHeaders = [
         "Amount", "Currency", "Type", "Category", "Payment Method",
         "Transaction Date", "Merchant", "Notes", "Date Added"
@@ -37,5 +51,39 @@ enum DomainLogic {
 
     static func csv(rows: [[String]]) -> String {
         rows.map { $0.map(csvField).joined(separator: ",") }.joined(separator: "\n")
+    }
+
+    static func parseCSV(_ text: String) throws -> [[String]] {
+        var rows: [[String]] = []
+        var row: [String] = []
+        var field = ""
+        var insideQuotes = false
+        let characters = Array(text.replacingOccurrences(of: "\r\n", with: "\n"))
+        var index = 0
+
+        while index < characters.count {
+            let character = characters[index]
+            if insideQuotes {
+                if character == "\"" {
+                    if index + 1 < characters.count, characters[index + 1] == "\"" {
+                        field.append("\""); index += 1
+                    } else { insideQuotes = false }
+                } else { field.append(character) }
+            } else {
+                switch character {
+                case "\"":
+                    guard field.isEmpty else { throw CSVError.malformed }
+                    insideQuotes = true
+                case ",": row.append(field); field = ""
+                case "\n":
+                    row.append(field); rows.append(row); row = []; field = ""
+                default: field.append(character)
+                }
+            }
+            index += 1
+        }
+        guard !insideQuotes else { throw CSVError.malformed }
+        if !field.isEmpty || !row.isEmpty { row.append(field); rows.append(row) }
+        return rows
     }
 }

@@ -75,3 +75,10 @@
 "This action can’t be undone." = "ಈ ಕ್ರಿಯೆಯನ್ನು ರದ್ದುಗೊಳಿಸಲಾಗುವುದಿಲ್ಲ.";
 "App Language" = "ಅಪ್ಲಿಕೇಶನ್ ಭಾಷೆ";
 "System Default" = "ಸಿಸ್ಟಮ್ ಡೀಫಾಲ್ಟ್";
+"Import Data (CSV)" = "ಆಮದು ಡೇಟಾ (CSV)";
+"Import Complete" = "ಆಮದು ಪೂರ್ಣಗೊಂಡಿದೆ";
+"Privacy Lock" = "ಗೌಪ್ಯತೆ ಲಾಕ್";
+"LedgerLeaf Locked" = "ಲೆಡ್ಜರ್‌ಲೀಫ್ ಲಾಕ್ ಮಾಡಲಾಗಿದೆ";
+"Authenticate to view your financial data." = "ನಿಮ್ಮ ಹಣಕಾಸಿನ ಡೇಟಾವನ್ನು ವೀಕ್ಷಿಸಲು ದೃಢೀಕರಿಸಿ.";
+"Unlock" = "ಅನ್ಲಾಕ್ ಮಾಡಿ";
+"Couldn’t Unlock" = "ಅನ್‌ಲಾಕ್ ಮಾಡಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ";

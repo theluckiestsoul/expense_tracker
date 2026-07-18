@@ -75,3 +75,10 @@
 "This action can’t be undone." = "এই ক্রিয়াটি পূর্বাবস্থায় ফেরানো যাবে না।";
 "App Language" = "অ্যাপের ভাষা";
 "System Default" = "সিস্টেম ডিফল্ট";
+"Import Data (CSV)" = "আমদানি ডেটা (CSV)";
+"Import Complete" = "আমদানি সম্পূর্ণ";
+"Privacy Lock" = "গোপনীয়তা লক";
+"LedgerLeaf Locked" = "লেজারলিফ লক করা হয়েছে";
+"Authenticate to view your financial data." = "আপনার আর্থিক তথ্য দেখতে প্রমাণীকরণ করুন.";
+"Unlock" = "আনলক";
+"Couldn’t Unlock" = "আনলক করা যায়নি";

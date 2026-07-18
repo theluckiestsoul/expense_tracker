@@ -13,6 +13,34 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertFalse(DomainLogic.transactionCSVHeaders.contains("updatedAt"))
     }
 
+    func testCSVBackupCanBeRestored() throws {
+        let transactionDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let createdAt = Date(timeIntervalSince1970: 1_700_000_100)
+        let row = [
+            "42.5", "EUR", "expense", "Food & Dining", "Card",
+            transactionDate.ISO8601Format(), "Cafe, Central", "He said \"hello\"",
+            createdAt.ISO8601Format()
+        ]
+        let backup = DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders, row])
+        let restored = try CSVBackup.importTransactions(from: backup)
+
+        XCTAssertEqual(restored.count, 1)
+        XCTAssertEqual(restored[0].amount, 42.5)
+        XCTAssertEqual(restored[0].currencyCode, "EUR")
+        XCTAssertEqual(restored[0].category, .food)
+        XCTAssertEqual(restored[0].merchant, "Cafe, Central")
+        XCTAssertEqual(restored[0].notes, "He said \"hello\"")
+    }
+
+    func testCSVRestoreRejectsUnknownAndMalformedFiles() {
+        XCTAssertThrowsError(try CSVBackup.importTransactions(from: "\"Not\",\"LedgerLeaf\"")) {
+            XCTAssertEqual($0 as? DomainLogic.CSVError, .invalidHeaders)
+        }
+        XCTAssertThrowsError(try DomainLogic.parseCSV("\"unfinished")) {
+            XCTAssertEqual($0 as? DomainLogic.CSVError, .malformed)
+        }
+    }
+
     func testCategorySetsNeverOverlap() {
         XCTAssertTrue(Set(ExpenseCategory.expenseCases).isDisjoint(with: Set(ExpenseCategory.incomeCases)))
         XCTAssertTrue(ExpenseCategory.expenseCases.allSatisfy { !$0.isIncome })

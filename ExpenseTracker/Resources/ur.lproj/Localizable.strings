@@ -75,3 +75,10 @@
 "This action can’t be undone." = "اس کارروائی کو کالعدم نہیں کیا جا سکتا۔";
 "App Language" = "ایپ کی زبان";
 "System Default" = "سسٹم ڈیفالٹ";
+"Import Data (CSV)" = "ڈیٹا درآمد کریں (CSV)";
+"Import Complete" = "درآمد مکمل";
+"Privacy Lock" = "پرائیویسی لاک";
+"LedgerLeaf Locked" = "لیجر لیف مقفل";
+"Authenticate to view your financial data." = "اپنے مالیاتی ڈیٹا کو دیکھنے کے لیے تصدیق کریں۔";
+"Unlock" = "غیر مقفل کریں۔";
+"Couldn’t Unlock" = "غیر مقفل نہیں کیا جا سکا";

@@ -75,3 +75,10 @@
 "This action can’t be undone." = "این عمل قابل واگرد نیست.";
 "App Language" = "زبان برنامه";
 "System Default" = "پیش فرض سیستم";
+"Import Data (CSV)" = "وارد کردن داده (CSV)";
+"Import Complete" = "واردات کامل شد";
+"Privacy Lock" = "قفل حریم خصوصی";
+"LedgerLeaf Locked" = "LedgerLeaf قفل شده است";
+"Authenticate to view your financial data." = "برای مشاهده داده های مالی خود احراز هویت کنید.";
+"Unlock" = "باز کردن قفل";
+"Couldn’t Unlock" = "باز نشد";

@@ -75,3 +75,10 @@
 "This action can’t be undone." = "ꯃꯁꯤꯒꯤ ꯑꯦꯛꯁꯟ ꯑꯁꯤ ꯂꯧꯊꯣꯀꯄꯥ ꯉꯃꯗꯦ꯫";
 "App Language" = "ꯑꯦꯞ ꯂꯦꯉ꯭ꯒꯨꯌꯦꯖ꯫";
 "System Default" = "ꯁꯤꯁ꯭ꯇꯦꯝ ꯗꯤꯐꯣꯜꯇ ꯑꯣꯏꯕꯥ꯫";
+"Import Data (CSV)" = "ꯏꯝꯄꯣꯔꯠ ꯗꯦꯇꯥ (ꯁꯤ.ꯑꯦꯁ.ꯚꯤ.)";
+"Import Complete" = "ꯏꯝꯄꯣꯔꯠ ꯃꯄꯨꯡ ꯐꯥꯔꯦ꯫";
+"Privacy Lock" = "ꯄ꯭ꯔꯥꯏꯚꯦꯁꯤ ꯂꯣꯛ ꯇꯧꯕꯥ꯫";
+"LedgerLeaf Locked" = "ꯂꯦꯖꯔꯂꯤꯐ ꯂꯣꯛ ꯇꯧꯕꯥ꯫";
+"Authenticate to view your financial data." = "ꯅꯍꯥꯛꯀꯤ ꯐꯥꯏꯅꯥꯟꯁꯤꯑꯦꯜ ꯗꯦꯇꯥ ꯑꯗꯨ ꯌꯦꯡꯅꯕꯒꯤꯗꯃꯛ ꯑꯣꯊꯦꯟꯇꯤꯀꯦꯠ ꯇꯧ꯫";
+"Unlock" = "ꯑꯅꯂꯣꯛ ꯇꯧꯕꯥ꯫";
+"Couldn’t Unlock" = "ꯑꯅꯂꯣꯛ ꯇꯧꯕꯥ ꯉꯃꯈꯤꯗꯦ꯫";
