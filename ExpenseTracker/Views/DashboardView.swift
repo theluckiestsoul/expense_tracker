@@ -34,6 +34,6 @@ struct DashboardView: View {
             }.navigationTitle("Dashboard")
         }
     }
-    private func metric(_ title: String, _ value: Double) -> some View { VStack(alignment: .leading, spacing: 8) { Text(title).font(.caption).foregroundStyle(.secondary); Text(AppFormat.money(value, currencyCode: currencyCode)).font(.headline).lineLimit(1).minimumScaleFactor(0.6) }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.background, in: RoundedRectangle(cornerRadius: 14)).shadow(color: .black.opacity(0.06), radius: 8) }
-    private func sectionHeader(_ title: String) -> some View { HStack { Text(title).font(.headline); Spacer() } }
+    private func metric(_ title: LocalizedStringKey, _ value: Double) -> some View { VStack(alignment: .leading, spacing: 8) { Text(title).font(.caption).foregroundStyle(.secondary); Text(AppFormat.money(value, currencyCode: currencyCode)).font(.headline).lineLimit(1).minimumScaleFactor(0.6) }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.background, in: RoundedRectangle(cornerRadius: 14)).shadow(color: .black.opacity(0.06), radius: 8) }
+    private func sectionHeader(_ title: LocalizedStringKey) -> some View { HStack { Text(title).font(.headline); Spacer() } }
 }

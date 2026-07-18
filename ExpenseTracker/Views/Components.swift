@@ -15,8 +15,8 @@ struct TransactionRow: View {
         HStack(spacing: 12) {
             CategoryIcon(category: transaction.category)
             VStack(alignment: .leading, spacing: 3) {
-                Text(transaction.merchant.isEmpty ? transaction.category.rawValue : transaction.merchant).font(.headline)
-                Text(transaction.category.rawValue).font(.caption).foregroundStyle(.secondary)
+                Text(transaction.merchant.isEmpty ? transaction.category.displayName : transaction.merchant).font(.headline)
+                Text(transaction.category.displayName).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {

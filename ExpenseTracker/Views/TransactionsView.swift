@@ -9,7 +9,7 @@ struct TransactionsView: View {
     @State private var editing: Transaction?
     @State private var pendingDeletion: [Transaction] = []
     @State private var errorMessage: String?
-    private var shown: [Transaction] { all.filter { (filter == nil || $0.type == filter) && (search.isEmpty || $0.merchant.localizedCaseInsensitiveContains(search) || $0.category.rawValue.localizedCaseInsensitiveContains(search)) } }
+    private var shown: [Transaction] { all.filter { (filter == nil || $0.type == filter) && (search.isEmpty || $0.merchant.localizedCaseInsensitiveContains(search) || $0.category.displayName.localizedCaseInsensitiveContains(search)) } }
 
     var body: some View {
         NavigationStack {

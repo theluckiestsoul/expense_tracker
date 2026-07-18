@@ -17,4 +17,15 @@ final class ExpenseTrackerUITests: XCTestCase {
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 5))
     }
+
+    func testDeviceLanguageSelectsSupportedLocalization() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(es)", "-AppleLocale", "es_ES"]
+        app.launch()
+
+        XCTAssertTrue(app.navigationBars["Resumen"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Transacciones"].exists)
+        XCTAssertTrue(app.buttons["Informes"].exists)
+        XCTAssertTrue(app.buttons["Ajustes"].exists)
+    }
 }

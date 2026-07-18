@@ -160,6 +160,12 @@
 			knownRegions = (
 				en,
 				Base,
+				es,
+				"zh-Hans",
+				"pt-BR",
+				hi,
+				ar,
+				fr,
 			);
 			mainGroup = A00000000000000000000001;
 			productRefGroup = A00000000000000000000001;

@@ -4,7 +4,12 @@ import SwiftData
 enum TransactionType: String, Codable, CaseIterable, Identifiable {
     case expense, income
     var id: String { rawValue }
-    var title: String { rawValue.capitalized }
+    var title: String {
+        switch self {
+        case .expense: String(localized: "Expense")
+        case .income: String(localized: "Income")
+        }
+    }
 }
 
 enum ExpenseCategory: String, Codable, CaseIterable, Identifiable {
@@ -19,6 +24,25 @@ enum ExpenseCategory: String, Codable, CaseIterable, Identifiable {
     static let incomeCases: [ExpenseCategory] = [.salary, .freelance, .business, .investments, .gifts, .refund, .otherIncome]
     static func cases(for type: TransactionType) -> [ExpenseCategory] { type == .expense ? expenseCases : incomeCases }
     var isIncome: Bool { Self.incomeCases.contains(self) }
+    var displayName: String {
+        switch self {
+        case .food: String(localized: "Food & Dining")
+        case .travel: String(localized: "Travel")
+        case .shopping: String(localized: "Shopping")
+        case .bills: String(localized: "Bills & Utilities")
+        case .health: String(localized: "Health")
+        case .entertainment: String(localized: "Entertainment")
+        case .education: String(localized: "Education")
+        case .other: String(localized: "Other Expense")
+        case .salary: String(localized: "Salary")
+        case .freelance: String(localized: "Freelance")
+        case .business: String(localized: "Business")
+        case .investments: String(localized: "Investments")
+        case .gifts: String(localized: "Gifts")
+        case .refund: String(localized: "Refund")
+        case .otherIncome: String(localized: "Other Income")
+        }
+    }
     var symbol: String {
         switch self {
         case .food: "fork.knife"; case .travel: "car.fill"; case .shopping: "cart.fill"
@@ -35,6 +59,17 @@ enum PaymentMethod: String, Codable, CaseIterable, Identifiable {
     case cash = "Cash", card = "Card", bank = "Bank Transfer", mobileWallet = "Mobile Wallet"
     case upi = "UPI", cheque = "Cheque", other = "Other"
     var id: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .cash: String(localized: "Cash")
+        case .card: String(localized: "Card")
+        case .bank: String(localized: "Bank Transfer")
+        case .mobileWallet: String(localized: "Mobile Wallet")
+        case .upi: String(localized: "UPI")
+        case .cheque: String(localized: "Cheque")
+        case .other: String(localized: "Other")
+        }
+    }
 }
 
 @Model

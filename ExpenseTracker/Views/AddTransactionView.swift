@@ -41,21 +41,21 @@ struct AddTransactionView: View {
                     }
                 }
                 Section {
-                    Picker("Category", selection: $category) { ForEach(ExpenseCategory.cases(for: type)) { Label($0.rawValue, systemImage: $0.symbol).tag($0) } }
-                    Picker("Payment Method", selection: $payment) { ForEach(PaymentMethod.allCases) { Text($0.rawValue).tag($0) } }
+                    Picker("Category", selection: $category) { ForEach(ExpenseCategory.cases(for: type)) { Label($0.displayName, systemImage: $0.symbol).tag($0) } }
+                    Picker("Payment Method", selection: $payment) { ForEach(PaymentMethod.allCases) { Text($0.displayName).tag($0) } }
                     Picker("Currency", selection: $transactionCurrency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }
                     DatePicker("Date", selection: $date)
                     TextField("Merchant / description", text: $merchant).textInputAutocapitalization(.words)
                     TextField("Notes (optional)", text: $notes, axis: .vertical).lineLimit(2...5)
                 }
-            }.navigationTitle(transaction == nil ? "Add Transaction" : "Edit Transaction").navigationBarTitleDisplayMode(.inline)
+            }.navigationTitle(transaction == nil ? String(localized: "Add Transaction") : String(localized: "Edit Transaction")).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveTransactionButton") } }
                 .alert("Couldn’t Save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
                 .onAppear { if transaction == nil { transactionCurrency = currencyCode } }
         }
     }
     private func save() {
-        guard let value = DomainLogic.parseAmount(amount) else { errorMessage = "Enter a valid amount greater than zero."; return }
+        guard let value = DomainLogic.parseAmount(amount) else { errorMessage = String(localized: "Enter a valid amount greater than zero."); return }
         let cleanMerchant = DomainLogic.sanitizedText(merchant, maximumLength: 80)
         let cleanNotes = DomainLogic.sanitizedText(notes, maximumLength: 500)
         if let transaction {

@@ -2,6 +2,8 @@
 
 A private, local-first iPhone money tracker built with SwiftUI, SwiftData, and Swift Charts.
 
+The interface automatically follows the user's supported iOS language. Current localizations are English, Hindi, Spanish, French, Brazilian Portuguese, Simplified Chinese, and Arabic; English is used as the fallback for other languages.
+
 ## Run
 
 1. Install Xcode 16 or newer with an iOS 17+ simulator.

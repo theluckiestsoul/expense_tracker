@@ -44,7 +44,7 @@ struct SettingsView: View {
                 }
                 Section("About") {
                     LabeledContent("LedgerLeaf", value: version)
-                    LabeledContent("Data Storage", value: "On this device")
+                    LabeledContent("Data Storage", value: String(localized: "On this device"))
                 }
             }.navigationTitle("Settings")
                 .onAppear { selectedCurrency = currencyCode }

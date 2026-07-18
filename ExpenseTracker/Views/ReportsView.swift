@@ -16,9 +16,9 @@ struct ReportsView: View {
                     Text("Total expense").foregroundStyle(.secondary)
                     Text(AppFormat.money(month.expenses, currencyCode: currencyCode)).font(.largeTitle.bold())
                     if categories.isEmpty { ContentUnavailableView("No expense data", systemImage: "chart.pie", description: Text("Add a \(currencyCode) expense to see this month’s report.")) }
-                    else { Chart(categories) { item in SectorMark(angle: .value("Amount", item.amount), innerRadius: .ratio(0.62), angularInset: 2).foregroundStyle(by: .value("Category", item.category.rawValue)) }.frame(height: 240).accessibilityLabel("Monthly spending by category") }
+                    else { Chart(categories) { item in SectorMark(angle: .value("Amount", item.amount), innerRadius: .ratio(0.62), angularInset: 2).foregroundStyle(by: .value("Category", item.category.displayName)) }.frame(height: 240).accessibilityLabel("Monthly spending by category") }
                     Text("Top Categories").font(.headline)
-                    ForEach(categories) { item in HStack { CategoryIcon(category: item.category); Text(item.category.rawValue); Spacer(); Text(AppFormat.money(item.amount, currencyCode: currencyCode)).fontWeight(.semibold) } }
+                    ForEach(categories) { item in HStack { CategoryIcon(category: item.category); Text(item.category.displayName); Spacer(); Text(AppFormat.money(item.amount, currencyCode: currencyCode)).fontWeight(.semibold) } }
                 }.padding()
             }.navigationTitle("Reports")
         }
