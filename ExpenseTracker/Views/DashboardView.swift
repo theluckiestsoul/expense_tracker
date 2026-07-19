@@ -36,6 +36,7 @@ struct DashboardView: View {
     }
     private var savingsGoals: [SavingsGoal] { SavingsGoalStore.decode(savingsGoalsJSON).filter { $0.currencyCode == currencyCode }.sorted { $0.progress > $1.progress } }
     private var ratio: Double { DomainLogic.budgetProgress(spent: month.expenses, budget: budget) }
+    private var projectedSpend: Double? { DomainLogic.projectedMonthlySpend(spent: month.expenses) }
     private var canTransfer: Bool { accounts.contains { source in accounts.contains { $0.id != source.id && $0.currencyCode == source.currencyCode } } }
     private var categoryBudgetProgress: [(CategoryBudget, CategoryPresentation, Double)] {
         let custom = CustomCategoryCatalog.decode(customCategoriesJSON)
@@ -82,6 +83,26 @@ struct DashboardView: View {
                     }
 
                     HStack { metric("Today’s spending", currencyTransactions.filter { Calendar.current.isDateInToday($0.transactionDate) && $0.type == .expense && $0.transferID == nil }.reduce(0) { $0 + $1.amount }); metric("Net this month", month.income - month.expenses) }
+
+                    if let projectedSpend, month.expenses > 0 {
+                        let atRisk = budget > 0 && projectedSpend > budget
+                        HStack(spacing: 14) {
+                            Image(systemName: atRisk ? "exclamationmark.triangle.fill" : "checkmark.circle.fill")
+                                .font(.title2).foregroundStyle(atRisk ? .orange : .green)
+                                .frame(width: 44, height: 44)
+                                .background((atRisk ? Color.orange : Color.green).opacity(0.12), in: Circle())
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Monthly Forecast").font(.headline)
+                                Text("Projected: \(AppFormat.money(projectedSpend, currencyCode: currencyCode))")
+                                    .font(.subheadline).fontWeight(.semibold)
+                                Text(atRisk ? "At this pace, spending may exceed your budget." : "Your current spending pace is within budget.")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .accessibilityIdentifier("monthlySpendingForecast")
+                    }
 
                     if !upcomingBills.isEmpty {
                         HStack {

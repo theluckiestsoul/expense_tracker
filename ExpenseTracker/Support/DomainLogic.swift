@@ -53,6 +53,14 @@ enum DomainLogic {
         max(budget - spent, 0)
     }
 
+    static func projectedMonthlySpend(spent: Double, now: Date = .now, calendar: Calendar = .current) -> Double? {
+        guard spent.isFinite, spent >= 0,
+              let dayRange = calendar.range(of: .day, in: .month, for: now) else { return nil }
+        let elapsedDays = calendar.component(.day, from: now)
+        guard elapsedDays > 0, !dayRange.isEmpty else { return nil }
+        return spent / Double(elapsedDays) * Double(dayRange.count)
+    }
+
     static func csvField(_ value: String) -> String {
         "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\""
     }

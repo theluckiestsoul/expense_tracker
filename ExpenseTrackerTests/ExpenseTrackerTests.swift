@@ -80,6 +80,18 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertFalse(DomainLogic.transactionCSVHeaders.contains("updatedAt"))
     }
 
+    func testMonthlySpendingForecastUsesElapsedAndCalendarDays() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let april15 = calendar.date(from: DateComponents(year: 2026, month: 4, day: 15, hour: 12))!
+        let february28 = calendar.date(from: DateComponents(year: 2026, month: 2, day: 28, hour: 23))!
+        XCTAssertEqual(DomainLogic.projectedMonthlySpend(spent: 1_500, now: april15, calendar: calendar), 3_000)
+        XCTAssertEqual(DomainLogic.projectedMonthlySpend(spent: 2_800, now: february28, calendar: calendar), 2_800)
+        XCTAssertEqual(DomainLogic.projectedMonthlySpend(spent: 0, now: april15, calendar: calendar), 0)
+        XCTAssertNil(DomainLogic.projectedMonthlySpend(spent: .infinity, now: april15, calendar: calendar))
+        XCTAssertNil(DomainLogic.projectedMonthlySpend(spent: -1, now: april15, calendar: calendar))
+    }
+
     func testCSVBackupCanBeRestored() throws {
         let transactionDate = Date(timeIntervalSince1970: 1_700_000_000)
         let createdAt = Date(timeIntervalSince1970: 1_700_000_100)

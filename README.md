@@ -4,7 +4,7 @@ A private, local-first iPhone money tracker built with SwiftUI, SwiftData, and S
 
 LedgerLeaf uses a leaf-led navigation identity and circular category markers to keep its interface visually distinct from generic expense trackers while retaining familiar iOS accessibility labels.
 
-The dashboard emphasizes monthly health, one-tap expense and income entry, compact metrics, horizontally scrolling wallet cards, and concise planning sections. Dashboard and reports can be filtered by wallet while retaining the existing report-period controls. Settings separates preferences, planning, automation, backup, and legal tasks to reduce visual density.
+The dashboard emphasizes monthly health, one-tap expense and income entry, compact metrics, horizontally scrolling wallet cards, and concise planning sections. A calendar-aware monthly forecast projects end-of-month spending and warns when the current pace may exceed the budget. Dashboard and reports can be filtered by wallet while retaining the existing report-period controls. Settings separates preferences, planning, automation, backup, and legal tasks to reduce visual density.
 
 Users can choose System, Leaf, Ocean, Sunset, or Monochrome themes. Themes update the app accent and dashboard identity while preserving semantic income, expense, warning, and success colors.
 
