@@ -18,6 +18,8 @@ struct SettingsView: View {
     @AppStorage(AppLanguage.storageKey) private var languageCode = ""
     @AppStorage(PrivacyLock.storageKey) private var privacyLockEnabled = false
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
+    @AppStorage(RecurringTransactionStore.storageKey) private var recurringTransactionsJSON = ""
+    @AppStorage(BillReminderService.enabledKey) private var billRemindersEnabled = false
     @State private var exporting = false
     @State private var importing = false
     @State private var selectedCurrency = CurrencyCatalog.defaultCode
@@ -52,6 +54,11 @@ struct SettingsView: View {
                         get: { privacyLockEnabled },
                         set: { updatePrivacyLock($0) }
                     ))
+                    Toggle("Bill Reminders", isOn: Binding(
+                        get: { billRemindersEnabled },
+                        set: { updateBillReminders($0) }
+                    ))
+                    .accessibilityIdentifier("billRemindersToggle")
                     NavigationLink("Custom Categories") { CustomCategoriesView() }
                         .accessibilityIdentifier("customCategoriesLink")
                     NavigationLink("Category Budgets") { CategoryBudgetsView() }
@@ -188,6 +195,28 @@ struct SettingsView: View {
                     privacyLockEnabled = true
                 }
             } catch { showError(error) }
+        }
+    }
+
+    private func updateBillReminders(_ enabled: Bool) {
+        if !enabled {
+            billRemindersEnabled = false
+            Task { await BillReminderService.disable() }
+            return
+        }
+        Task { @MainActor in
+            do {
+                if try await BillReminderService.enableAndSchedule(schedulesJSON: recurringTransactionsJSON) {
+                    billRemindersEnabled = true
+                } else {
+                    billRemindersEnabled = false
+                    statusTitle = "Notifications Disabled"
+                    statusMessage = "Enable notifications for LedgerLeaf in iPhone Settings to receive bill reminders."
+                }
+            } catch {
+                billRemindersEnabled = false
+                showError(error)
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ struct RootView: View {
     @Environment(\.modelContext) private var context
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(RecurringTransactionStore.storageKey) private var recurringTransactionsJSON = ""
+    @AppStorage(BillReminderService.enabledKey) private var billRemindersEnabled = false
     @State private var selection = 0
     @State private var adding = false
 
@@ -22,8 +23,12 @@ struct RootView: View {
         .task {
             try? LegacyDataMigrator.assignMissingCurrencies(in: context, currencyCode: currencyCode)
             processSchedules()
+            if billRemindersEnabled { await BillReminderService.schedule(schedulesJSON: recurringTransactionsJSON) }
         }
-        .onChange(of: recurringTransactionsJSON) { _, _ in processSchedules() }
+        .onChange(of: recurringTransactionsJSON) { _, _ in
+            processSchedules()
+            if billRemindersEnabled { Task { await BillReminderService.schedule(schedulesJSON: recurringTransactionsJSON) } }
+        }
     }
 
     private func processSchedules() {

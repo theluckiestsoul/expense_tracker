@@ -76,6 +76,15 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.keyboards.element.waitForNonExistence(timeout: 3))
     }
 
+    func testBillReminderSettingIsAvailable() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+
+        app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.switches["billRemindersToggle"].waitForExistence(timeout: 5))
+    }
+
     func testCreateCategoryBudgetAndOpenTransactionFilters() {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-categoryBudgetsJSON", "[]"]

@@ -18,6 +18,10 @@ You may also select a LedgerLeaf CSV backup to restore transactions. The selecte
 
 If you enable Privacy Lock, LedgerLeaf asks iOS to authenticate you with Face ID, Touch ID, or the device passcode. Authentication is performed by the operating system. LedgerLeaf does not receive or store biometric information.
 
+## Bill reminders
+
+If you enable Bill Reminders, LedgerLeaf asks iOS for notification permission and schedules alerts for recurring expenses. Reminder scheduling happens locally on your device. No transaction or reminder information is sent to the developer.
+
 ## Data deletion
 
 You can delete all transactions from Settings inside the app. Removing the app from your device also removes its locally stored data, subject to any device backups managed by you or Apple.

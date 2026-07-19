@@ -98,6 +98,24 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertFalse(ReportPeriod.month.includes(february1, now: january11, calendar: calendar))
     }
 
+    func testBillRemindersIncludeOnlyFutureActiveExpenses() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 7, day: 10, hour: 8))!
+        let dueDate = calendar.date(from: DateComponents(year: 2026, month: 7, day: 12))!
+        let expense = RecurringTransaction(name: "Rent", amount: 900, type: .expense, categoryRaw: ExpenseCategory.bills.rawValue, paymentMethod: .bank, currencyCode: "USD", merchant: "Landlord", notes: "", frequency: .monthly, nextDate: dueDate)
+        let income = RecurringTransaction(name: "Salary", amount: 2_000, type: .income, categoryRaw: ExpenseCategory.salary.rawValue, paymentMethod: .bank, currencyCode: "USD", merchant: "Employer", notes: "", frequency: .monthly, nextDate: dueDate)
+        var paused = expense
+        paused.id = UUID(); paused.name = "Paused Bill"; paused.isActive = false
+
+        let plans = BillReminderPlanner.plans(for: [expense, income, paused], now: now, calendar: calendar)
+        XCTAssertEqual(plans.count, 1)
+        XCTAssertTrue(plans[0].identifier.hasPrefix(BillReminderPlanner.identifierPrefix))
+        XCTAssertTrue(plans[0].body.contains("Rent"))
+        XCTAssertEqual(calendar.component(.day, from: plans[0].fireDate), 11)
+        XCTAssertEqual(calendar.component(.hour, from: plans[0].fireDate), 9)
+    }
+
     func testMismatchedCategoryFallsBackSafely() {
         let transaction = Transaction(amount: 1, type: .income, category: .food, paymentMethod: .cash, currencyCode: "USD", transactionDate: .now, merchant: "")
         XCTAssertEqual(transaction.category, .otherIncome)
