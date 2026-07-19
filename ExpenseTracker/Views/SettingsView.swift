@@ -50,6 +50,8 @@ struct SettingsView: View {
                     ))
                     NavigationLink("Custom Categories") { CustomCategoriesView() }
                         .accessibilityIdentifier("customCategoriesLink")
+                    NavigationLink("Recurring Transactions") { RecurringTransactionsView() }
+                        .accessibilityIdentifier("recurringTransactionsLink")
                 }
                 Section("Data & Backup") {
                     Button("Export Data (CSV)") { exporting = true }.disabled(transactions.isEmpty)

@@ -45,6 +45,23 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Pets"].waitForExistence(timeout: 5))
     }
 
+    func testCreateRecurringTransaction() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-recurringTransactionsJSON", "[]"]
+        app.launch()
+
+        app.tabBars.buttons["Settings"].tap()
+        app.buttons["recurringTransactionsLink"].tap()
+        app.buttons["addRecurringTransaction"].tap()
+        let name = app.textFields["recurringName"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap(); name.typeText("Monthly Rent")
+        let amount = app.textFields["recurringAmount"]
+        amount.tap(); amount.typeText("1000")
+        app.buttons["saveRecurringTransaction"].tap()
+        XCTAssertTrue(app.staticTexts["Monthly Rent"].waitForExistence(timeout: 5))
+    }
+
     func testPersianLocalization() {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(fa)", "-AppleLocale", "fa_IR"]

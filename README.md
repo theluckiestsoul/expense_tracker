@@ -4,6 +4,8 @@ A private, local-first iPhone money tracker built with SwiftUI, SwiftData, and S
 
 LedgerLeaf supports separate built-in and custom income/expense categories. Custom categories can use personalized names, icons, and colors, and can be archived without changing historical transactions. CSV backups include the custom-category metadata and remain compatible with older LedgerLeaf exports.
 
+Recurring transactions can automatically record weekly, monthly, or yearly income and expenses such as salary, rent, and subscriptions. Schedules support custom categories, pause/resume, editing, missed-period catch-up, and duplicate-safe generation.
+
 The interface automatically follows the user's supported iOS language. Current localizations include English, Persian, Spanish, French, Brazilian Portuguese, Simplified Chinese, Arabic, and 20 scheduled languages of India: Assamese, Bengali, Dogri, Gujarati, Hindi, Kannada, Konkani, Maithili, Malayalam, Manipuri, Marathi, Nepali, Odia, Punjabi, Sanskrit, Santali, Sindhi, Tamil, Telugu, and Urdu. English is used as the fallback for other languages. Bodo and Kashmiri are temporarily unavailable until genuine native translations replace the previous fallback copies.
 
 ## Run

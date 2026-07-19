@@ -83,4 +83,25 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(saved.first?.currencyCode, "EUR")
         XCTAssertEqual(saved.first?.category, .food)
     }
+
+    @MainActor
+    func testRecurringGenerationIsDuplicateSafe() throws {
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        let container = try ModelContainer(for: Transaction.self, configurations: configuration)
+        let context = container.mainContext
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2026, month: 1, day: 1))!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 3, day: 1))!
+        let schedule = RecurringTransaction(name: "Rent", amount: 1000, type: .expense, categoryRaw: ExpenseCategory.bills.rawValue, paymentMethod: .bank, currencyCode: "USD", merchant: "Landlord", notes: "", frequency: .monthly, nextDate: start)
+        let originalJSON = RecurringTransactionStore.encode([schedule])
+
+        let updatedJSON = try RecurringTransactionProcessor.processDue(in: context, schedulesJSON: originalJSON, now: now, calendar: calendar)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<Transaction>()).count, 3)
+        XCTAssertTrue(try context.fetch(FetchDescriptor<Transaction>()).allSatisfy { $0.recurringSourceID == schedule.id })
+        XCTAssertTrue(RecurringTransactionStore.decode(updatedJSON)[0].nextDate > now)
+
+        _ = try RecurringTransactionProcessor.processDue(in: context, schedulesJSON: originalJSON, now: now, calendar: calendar)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<Transaction>()).count, 3)
+    }
 }
