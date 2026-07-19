@@ -92,6 +92,17 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertNil(DomainLogic.projectedMonthlySpend(spent: -1, now: april15, calendar: calendar))
     }
 
+    func testBudgetStatusUsesExpectedAlertThresholds() {
+        XCTAssertEqual(DomainLogic.budgetStatus(spent: 749, budget: 1_000), .onTrack)
+        XCTAssertEqual(DomainLogic.budgetStatus(spent: 750, budget: 1_000), .approaching)
+        XCTAssertEqual(DomainLogic.budgetStatus(spent: 899, budget: 1_000), .approaching)
+        XCTAssertEqual(DomainLogic.budgetStatus(spent: 900, budget: 1_000), .nearlyReached)
+        XCTAssertEqual(DomainLogic.budgetStatus(spent: 1_000, budget: 1_000), .exceeded)
+        XCTAssertEqual(DomainLogic.budgetStatus(spent: 1_200, budget: 1_000), .exceeded)
+        XCTAssertEqual(DomainLogic.budgetStatus(spent: 500, budget: 0), .disabled)
+        XCTAssertEqual(DomainLogic.budgetStatus(spent: .infinity, budget: 1_000), .disabled)
+    }
+
     func testCSVBackupCanBeRestored() throws {
         let transactionDate = Date(timeIntervalSince1970: 1_700_000_000)
         let createdAt = Date(timeIntervalSince1970: 1_700_000_100)

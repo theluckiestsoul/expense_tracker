@@ -36,6 +36,7 @@ struct DashboardView: View {
     }
     private var savingsGoals: [SavingsGoal] { SavingsGoalStore.decode(savingsGoalsJSON).filter { $0.currencyCode == currencyCode }.sorted { $0.progress > $1.progress } }
     private var ratio: Double { DomainLogic.budgetProgress(spent: month.expenses, budget: budget) }
+    private var budgetStatus: DomainLogic.BudgetStatus { DomainLogic.budgetStatus(spent: month.expenses, budget: budget) }
     private var projectedSpend: Double? { DomainLogic.projectedMonthlySpend(spent: month.expenses) }
     private var canTransfer: Bool { accounts.contains { source in accounts.contains { $0.id != source.id && $0.currencyCode == source.currencyCode } } }
     private var categoryBudgetProgress: [(CategoryBudget, CategoryPresentation, Double)] {
@@ -75,6 +76,10 @@ struct DashboardView: View {
                             Text("Income \(AppFormat.money(month.income, currencyCode: currencyCode))")
                         }.font(.caption.weight(.semibold)).foregroundStyle(.white)
                     }.padding(20).background(LinearGradient(colors: theme.heroColors, startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+
+                    if budgetStatus == .approaching || budgetStatus == .nearlyReached || budgetStatus == .exceeded {
+                        budgetAlert
+                    }
 
                     HStack(spacing: 12) {
                         quickAction("Expense", symbol: "arrow.up.right", color: .orange) { addingType = .expense }
@@ -194,6 +199,28 @@ struct DashboardView: View {
     }
     private func metric(_ title: LocalizedStringKey, _ value: Double) -> some View { VStack(alignment: .leading, spacing: 8) { Text(title).font(.caption).foregroundStyle(.secondary); Text(AppFormat.money(value, currencyCode: currencyCode)).font(.headline).lineLimit(1).minimumScaleFactor(0.6) }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous)) }
     private func sectionHeader(_ title: LocalizedStringKey) -> some View { HStack { Text(title).font(.headline); Spacer() } }
+    private var budgetAlert: some View {
+        let exceeded = budgetStatus == .exceeded
+        let nearlyReached = budgetStatus == .nearlyReached
+        let color: Color = exceeded ? .red : .orange
+        let title = exceeded ? "Monthly budget exceeded" : (nearlyReached ? "Monthly budget nearly reached" : "Monthly budget is at 75%")
+        let detail = exceeded
+            ? "Over by \(AppFormat.money(max(month.expenses - budget, 0), currencyCode: currencyCode))"
+            : "\(AppFormat.money(DomainLogic.budgetRemaining(spent: month.expenses, budget: budget), currencyCode: currencyCode)) remaining"
+        return HStack(spacing: 12) {
+            Image(systemName: exceeded ? "exclamationmark.octagon.fill" : "exclamationmark.triangle.fill")
+                .font(.title2).foregroundStyle(color)
+                .frame(width: 42, height: 42).background(color.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.subheadline.weight(.semibold))
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding().background(color.opacity(0.08), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("monthlyBudgetAlert")
+    }
     private func dueLabel(for date: Date) -> String {
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: .now)

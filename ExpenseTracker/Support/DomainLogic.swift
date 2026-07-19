@@ -1,6 +1,14 @@
 import Foundation
 
 enum DomainLogic {
+    enum BudgetStatus: Equatable {
+        case disabled
+        case onTrack
+        case approaching
+        case nearlyReached
+        case exceeded
+    }
+
     enum CSVError: LocalizedError, Equatable {
         case malformed
         case invalidHeaders
@@ -51,6 +59,17 @@ enum DomainLogic {
 
     static func budgetRemaining(spent: Double, budget: Double) -> Double {
         max(budget - spent, 0)
+    }
+
+    static func budgetStatus(spent: Double, budget: Double) -> BudgetStatus {
+        guard spent.isFinite, budget.isFinite, budget > 0 else { return .disabled }
+        let progress = max(spent, 0) / budget
+        return switch progress {
+        case 1...: .exceeded
+        case 0.9...: .nearlyReached
+        case 0.75...: .approaching
+        default: .onTrack
+        }
     }
 
     static func projectedMonthlySpend(spent: Double, now: Date = .now, calendar: Calendar = .current) -> Double? {
