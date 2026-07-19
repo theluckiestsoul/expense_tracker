@@ -101,6 +101,23 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.buttons["transferMoney"].exists)
     }
 
+    func testCreateSavingsGoal() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-savingsGoalsJSON", "[]"]
+        app.launch()
+
+        app.tabBars.buttons["Settings"].tap()
+        app.buttons["savingsGoalsLink"].tap()
+        app.buttons["addSavingsGoal"].tap()
+        let name = app.textFields["savingsGoalName"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.typeText("Emergency Fund")
+        let target = app.textFields["savingsGoalTarget"]
+        target.tap(); target.typeText("10000")
+        app.buttons["saveSavingsGoal"].tap()
+        XCTAssertTrue(app.staticTexts["Emergency Fund"].waitForExistence(timeout: 5))
+    }
+
     func testCreateCategoryBudgetAndOpenTransactionFilters() {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-categoryBudgetsJSON", "[]"]

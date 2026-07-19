@@ -65,6 +65,8 @@ struct SettingsView: View {
                         .accessibilityIdentifier("accountsLink")
                     NavigationLink("Category Budgets") { CategoryBudgetsView() }
                         .accessibilityIdentifier("categoryBudgetsLink")
+                    NavigationLink("Savings Goals") { SavingsGoalsView() }
+                        .accessibilityIdentifier("savingsGoalsLink")
                     NavigationLink("Recurring Transactions") { RecurringTransactionsView() }
                         .accessibilityIdentifier("recurringTransactionsLink")
                 }

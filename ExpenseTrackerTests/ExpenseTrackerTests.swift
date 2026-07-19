@@ -3,6 +3,18 @@ import SwiftData
 @testable import ExpenseTracker
 
 final class ExpenseTrackerTests: XCTestCase {
+    func testSavingsGoalsRoundTripAndCalculateProgress() {
+        let goal = SavingsGoal(id: UUID(), name: "Emergency Fund", targetAmount: 10_000, savedAmount: 2_500, currencyCode: "USD", targetDate: nil)
+        let restored = SavingsGoalStore.decode(SavingsGoalStore.encode([goal]))
+        XCTAssertEqual(restored, [goal])
+        XCTAssertEqual(restored[0].progress, 0.25)
+        XCTAssertEqual(restored[0].remaining, 7_500)
+
+        let complete = SavingsGoal(id: UUID(), name: "Trip", targetAmount: 1_000, savedAmount: 1_200, currencyCode: "EUR", targetDate: nil)
+        XCTAssertEqual(complete.progress, 1)
+        XCTAssertEqual(complete.remaining, 0)
+    }
+
     func testAmountParsingAndCSVEncoding() {
         XCTAssertEqual(DomainLogic.parseAmount("42.50", decimalSeparator: "."), 42.5)
         XCTAssertEqual(DomainLogic.parseAmount("42,50", decimalSeparator: ","), 42.5)

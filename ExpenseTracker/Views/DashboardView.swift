@@ -9,9 +9,11 @@ struct DashboardView: View {
     @AppStorage(CategoryBudgetStore.storageKey) private var categoryBudgetsJSON = ""
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
+    @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
     private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON).filter { !$0.isArchived } }
     private var currencyTransactions: [Transaction] { transactions.filter { ($0.currencyCode ?? currencyCode) == currencyCode } }
     private var month: [Transaction] { currencyTransactions.inCurrentMonth() }
+    private var savingsGoals: [SavingsGoal] { SavingsGoalStore.decode(savingsGoalsJSON).filter { $0.currencyCode == currencyCode }.sorted { $0.progress > $1.progress } }
     private var ratio: Double { DomainLogic.budgetProgress(spent: month.expenses, budget: budget) }
     private var categoryBudgetProgress: [(CategoryBudget, CategoryPresentation, Double)] {
         let custom = CustomCategoryCatalog.decode(customCategoriesJSON)
@@ -53,6 +55,19 @@ struct DashboardView: View {
                         VStack(spacing: 14) {
                             ForEach(categoryBudgetProgress.prefix(4), id: \.0.id) { item in
                                 categoryBudgetRow(budget: item.0, category: item.1, spent: item.2)
+                            }
+                        }.padding().background(.background, in: RoundedRectangle(cornerRadius: 14)).shadow(color: .black.opacity(0.05), radius: 8)
+                    }
+
+                    if !savingsGoals.isEmpty {
+                        sectionHeader("Savings Goals")
+                        VStack(spacing: 14) {
+                            ForEach(savingsGoals.prefix(3)) { goal in
+                                VStack(spacing: 6) {
+                                    HStack { Label(goal.name, systemImage: goal.progress >= 1 ? "checkmark.circle.fill" : "target"); Spacer(); Text(goal.progress, format: .percent.precision(.fractionLength(0))).foregroundStyle(.secondary) }
+                                    ProgressView(value: goal.progress).tint(goal.progress >= 1 ? .green : .indigo)
+                                    Text("Remaining \(AppFormat.money(goal.remaining, currencyCode: goal.currencyCode))").font(.caption).foregroundStyle(.secondary).frame(maxWidth: .infinity, alignment: .trailing)
+                                }
                             }
                         }.padding().background(.background, in: RoundedRectangle(cornerRadius: 14)).shadow(color: .black.opacity(0.05), radius: 8)
                     }
