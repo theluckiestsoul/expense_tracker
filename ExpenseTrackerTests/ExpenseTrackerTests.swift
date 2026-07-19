@@ -200,6 +200,14 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(ReportCalculator.savingsRate(income: 1_000, expenses: 300), 0.7)
         XCTAssertNil(ReportCalculator.savingsRate(income: 0, expenses: 300))
         XCTAssertFalse(ReportPeriod.month.includes(february1, now: january11, calendar: calendar))
+        XCTAssertEqual(ReportCalculator.percentageChange(current: 75, previous: 100), -0.25)
+        XCTAssertEqual(ReportCalculator.percentageChange(current: 125, previous: 100), 0.25)
+        XCTAssertNil(ReportCalculator.percentageChange(current: 100, previous: 0))
+        let previousMonth = ReportPeriod.month.interval(offset: -1, now: february1, calendar: calendar)!
+        XCTAssertTrue(ReportPeriod.month.includes(january10, offset: -1, now: february1, calendar: calendar))
+        XCTAssertFalse(ReportPeriod.month.includes(february1, offset: -1, now: february1, calendar: calendar))
+        XCTAssertEqual(previousMonth.end, february1)
+        XCTAssertNil(ReportPeriod.all.interval(now: february1, calendar: calendar))
     }
 
     func testBillRemindersIncludeOnlyFutureActiveExpenses() {

@@ -76,7 +76,7 @@ struct LedgerLeafBackup: Codable, Equatable {
         let currencies = Set(CurrencyCatalog.all.map(\.code))
         let languages = Set(AppLanguage.supported.map(\.code))
         guard currencies.contains(preferences.currencyCode), languages.contains(preferences.languageCode),
-              preferences.themeRaw.map { AppTheme(rawValue: $0) != nil } ?? true,
+              preferences.themeRaw.map({ AppTheme(rawValue: $0) != nil }) ?? true,
               preferences.monthlyBudget.isFinite, preferences.monthlyBudget >= 0,
               Set(transactions.map(\.id)).count == transactions.count,
               transactions.allSatisfy({ $0.amount.isFinite && $0.amount > 0 && currencies.contains($0.currencyCode) }),

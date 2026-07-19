@@ -16,6 +16,23 @@ enum ReportPeriod: String, CaseIterable, Identifiable {
         }
     }
 
+    func interval(offset: Int = 0, now: Date = .now, calendar: Calendar = .current) -> DateInterval? {
+        let component: Calendar.Component
+        switch self {
+        case .week: component = .weekOfYear
+        case .month: component = .month
+        case .year: component = .year
+        case .all: return nil
+        }
+        guard let shifted = calendar.date(byAdding: component, value: offset, to: now) else { return nil }
+        return calendar.dateInterval(of: component, for: shifted)
+    }
+
+    func includes(_ date: Date, offset: Int, now: Date = .now, calendar: Calendar = .current) -> Bool {
+        guard let interval = interval(offset: offset, now: now, calendar: calendar) else { return self == .all }
+        return date >= interval.start && date < interval.end
+    }
+
     var bucketComponent: Calendar.Component { self == .year || self == .all ? .month : .day }
 }
 
@@ -27,6 +44,11 @@ struct CashFlowPoint: Identifiable, Equatable {
 }
 
 enum ReportCalculator {
+    static func percentageChange(current: Double, previous: Double) -> Double? {
+        guard previous > 0, current.isFinite, previous.isFinite else { return nil }
+        return (current - previous) / previous
+    }
+
     static func savingsRate(income: Double, expenses: Double) -> Double? {
         guard income > 0 else { return nil }
         return (income - expenses) / income

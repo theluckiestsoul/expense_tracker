@@ -18,14 +18,20 @@ struct ReportsView: View {
     }
     private var selectedAccount: FinancialAccount? { accounts.first { $0.id == selectedAccountID } }
 
-    private var periodTransactions: [Transaction] {
+    private var eligibleTransactions: [Transaction] {
         transactions.filter { transaction in
             guard transaction.transferID == nil,
-                  (transaction.currencyCode ?? currencyCode) == currencyCode,
-                  period.includes(transaction.transactionDate) else { return false }
+                  (transaction.currencyCode ?? currencyCode) == currencyCode else { return false }
             guard let selectedAccount else { return true }
             return FinancialAccountStore.matches(transaction, account: selectedAccount)
         }
+    }
+
+    private var periodTransactions: [Transaction] {
+        eligibleTransactions.filter { period.includes($0.transactionDate) }
+    }
+    private var previousTransactions: [Transaction] {
+        eligibleTransactions.filter { period.includes($0.transactionDate, offset: -1) }
     }
     private var selectedTransactions: [Transaction] { periodTransactions.filter { $0.type == selectedType } }
     private var customCategories: [CustomCategory] { CustomCategoryCatalog.decode(customCategoriesJSON) }
@@ -64,6 +70,17 @@ struct ReportsView: View {
                         totalCard(title: "Net", amount: periodTransactions.income - periodTransactions.expenses,
                                   color: periodTransactions.income >= periodTransactions.expenses ? .green : .red)
                         rateCard
+                    }
+
+                    if period != .all {
+                        Text("Compared with Previous \(period.title)").font(.headline)
+                        HStack(spacing: 12) {
+                            comparisonCard(title: "Spending", current: periodTransactions.expenses,
+                                           previous: previousTransactions.expenses, lowerIsBetter: true)
+                            comparisonCard(title: "Income", current: periodTransactions.income,
+                                           previous: previousTransactions.income, lowerIsBetter: false)
+                        }
+                        .accessibilityIdentifier("reportPeriodComparison")
                     }
 
                     Text("Cash Flow").font(.headline)
@@ -119,5 +136,24 @@ struct ReportsView: View {
             Text(title).font(.caption).foregroundStyle(.secondary)
             Text(AppFormat.money(amount, currencyCode: currencyCode)).font(.headline).foregroundStyle(color).lineLimit(1).minimumScaleFactor(0.65)
         }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func comparisonCard(title: LocalizedStringKey, current: Double, previous: Double, lowerIsBetter: Bool) -> some View {
+        let change = ReportCalculator.percentageChange(current: current, previous: previous)
+        let favorable = change.map { lowerIsBetter ? $0 <= 0 : $0 >= 0 } ?? false
+        return VStack(alignment: .leading, spacing: 7) {
+            Text(title).font(.caption).foregroundStyle(.secondary)
+            if let change {
+                Label(change.formatted(.percent.precision(.fractionLength(0))),
+                      systemImage: change >= 0 ? "arrow.up.right" : "arrow.down.right")
+                    .font(.headline).foregroundStyle(favorable ? .green : .orange)
+            } else {
+                Text("No previous data").font(.subheadline).foregroundStyle(.secondary)
+            }
+            Text("Previous: \(AppFormat.money(previous, currencyCode: currencyCode))")
+                .font(.caption2).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading).padding()
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
     }
 }

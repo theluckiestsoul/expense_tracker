@@ -157,6 +157,7 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.segmentedControls["reportPeriodPicker"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Cash Flow"].exists)
         XCTAssertTrue(app.staticTexts["Savings Rate"].exists)
+        XCTAssertTrue(app.staticTexts["Compared with Previous Month"].exists)
     }
 
     func testPersianLocalization() {
