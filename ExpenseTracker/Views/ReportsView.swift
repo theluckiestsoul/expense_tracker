@@ -8,11 +8,24 @@ struct ReportsView: View {
     @Query private var transactions: [Transaction]
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
+    @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     @State private var selectedType: TransactionType = .expense
     @State private var period: ReportPeriod = .month
+    @State private var selectedAccountID = ""
+
+    private var accounts: [FinancialAccount] {
+        FinancialAccountStore.decode(accountsJSON).filter { !$0.isArchived && $0.currencyCode == currencyCode }
+    }
+    private var selectedAccount: FinancialAccount? { accounts.first { $0.id == selectedAccountID } }
 
     private var periodTransactions: [Transaction] {
-        transactions.filter { $0.transferID == nil && ($0.currencyCode ?? currencyCode) == currencyCode && period.includes($0.transactionDate) }
+        transactions.filter { transaction in
+            guard transaction.transferID == nil,
+                  (transaction.currencyCode ?? currencyCode) == currencyCode,
+                  period.includes(transaction.transactionDate) else { return false }
+            guard let selectedAccount else { return true }
+            return FinancialAccountStore.matches(transaction, account: selectedAccount)
+        }
     }
     private var selectedTransactions: [Transaction] { periodTransactions.filter { $0.type == selectedType } }
     private var customCategories: [CustomCategory] { CustomCategoryCatalog.decode(customCategoriesJSON) }
@@ -33,6 +46,15 @@ struct ReportsView: View {
                     }
                     .pickerStyle(.segmented)
                     .accessibilityIdentifier("reportPeriodPicker")
+
+                    if accounts.count > 1 {
+                        Picker("Wallet Filter", selection: $selectedAccountID) {
+                            Text("All Wallets").tag("")
+                            ForEach(accounts) { Text($0.name).tag($0.id) }
+                        }
+                        .pickerStyle(.menu)
+                        .accessibilityIdentifier("reportAccountFilter")
+                    }
 
                     HStack(spacing: 12) {
                         totalCard(title: "Expense", amount: periodTransactions.expenses, color: .red)
@@ -80,6 +102,7 @@ struct ReportsView: View {
                     }
                 }.padding()
             }.navigationTitle("Reports")
+                .onChange(of: accountsJSON) { _, _ in if selectedAccount == nil { selectedAccountID = "" } }
         }
     }
 

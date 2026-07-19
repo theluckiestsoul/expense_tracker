@@ -7,6 +7,7 @@ struct RootView: View {
     @AppStorage(RecurringTransactionStore.storageKey) private var recurringTransactionsJSON = ""
     @AppStorage(BillReminderService.enabledKey) private var billRemindersEnabled = false
     @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
+    @AppStorage(AppTheme.storageKey) private var themeRaw = AppTheme.system.rawValue
     @State private var selection = 0
     @State private var adding = false
 
@@ -18,7 +19,7 @@ struct RootView: View {
             ReportsView().tabItem { Label("Reports", systemImage: "chart.line.uptrend.xyaxis") }.tag(3)
             SettingsView().tabItem { Label("Settings", systemImage: "slider.horizontal.3") }.tag(4)
         }
-        .tint(.indigo)
+        .tint(theme.accent)
         .onChange(of: selection) { _, value in if value == 2 { adding = true; selection = 0 } }
         .sheet(isPresented: $adding) { AddTransactionView() }
         .task {
@@ -33,6 +34,8 @@ struct RootView: View {
             if billRemindersEnabled { Task { await BillReminderService.schedule(schedulesJSON: recurringTransactionsJSON) } }
         }
     }
+
+    private var theme: AppTheme { AppTheme(rawValue: themeRaw) ?? .system }
 
     private func processSchedules() {
         if let updated = try? RecurringTransactionProcessor.processDue(in: context, schedulesJSON: recurringTransactionsJSON),

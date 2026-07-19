@@ -4,7 +4,9 @@ A private, local-first iPhone money tracker built with SwiftUI, SwiftData, and S
 
 LedgerLeaf uses a leaf-led navigation identity and circular category markers to keep its interface visually distinct from generic expense trackers while retaining familiar iOS accessibility labels.
 
-The dashboard emphasizes monthly health, one-tap expense and income entry, compact metrics, horizontally scrolling wallet cards, and concise planning sections. Settings separates preferences, planning, automation, backup, and legal tasks to reduce visual density.
+The dashboard emphasizes monthly health, one-tap expense and income entry, compact metrics, horizontally scrolling wallet cards, and concise planning sections. Dashboard and reports can be filtered by wallet while retaining the existing report-period controls. Settings separates preferences, planning, automation, backup, and legal tasks to reduce visual density.
+
+Users can choose System, Leaf, Ocean, Sunset, or Monochrome themes. Themes update the app accent and dashboard identity while preserving semantic income, expense, warning, and success colors.
 
 LedgerLeaf supports separate built-in and custom income/expense categories. Custom categories can use personalized names, icons, and colors, and can be archived without changing historical transactions. CSV backups include the custom-category metadata and remain compatible with older LedgerLeaf exports.
 
@@ -44,6 +46,6 @@ The interface automatically follows the user's supported iOS language. Current l
 - Override the device with `make run SIMULATOR='iPhone 15'`.
 - `make doctor` reports whether the required Apple tools are installed.
 
-Transactions retain their original ISO currency, while dashboard and report totals use the selected default currency. Data and preferences stay on device with SwiftData/AppStorage. CSV export uses the system share sheet. The app does not track users or transmit personal data.
+Transactions retain their original ISO currency, while dashboard and report totals use the selected default currency. Data and preferences stay on device with SwiftData/AppStorage. CSV export uses the system share sheet. Settings includes a CSV import guide and a header-only template; CSV imports merge transactions and skip duplicates. The app does not track users or transmit personal data.
 
 Complete LedgerLeaf backups preserve transactions, linked transfers, wallets, custom categories, budgets, savings goals, recurring schedules, and core preferences in one versioned JSON file. Restore validates the full file and asks before replacing local data; biometric and notification permissions remain specific to each device.

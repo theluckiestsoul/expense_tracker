@@ -10,10 +10,21 @@ struct DashboardView: View {
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
+    @AppStorage(AppTheme.storageKey) private var themeRaw = AppTheme.system.rawValue
     @State private var addingType: TransactionType?
     @State private var transferring = false
+    @State private var selectedAccountID = ""
     private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON).filter { !$0.isArchived } }
-    private var currencyTransactions: [Transaction] { transactions.filter { ($0.currencyCode ?? currencyCode) == currencyCode } }
+    private var filterAccounts: [FinancialAccount] { accounts.filter { $0.currencyCode == currencyCode } }
+    private var selectedAccount: FinancialAccount? { filterAccounts.first { $0.id == selectedAccountID } }
+    private var theme: AppTheme { AppTheme(rawValue: themeRaw) ?? .system }
+    private var currencyTransactions: [Transaction] {
+        transactions.filter { transaction in
+            guard (transaction.currencyCode ?? currencyCode) == currencyCode else { return false }
+            guard let selectedAccount else { return true }
+            return FinancialAccountStore.matches(transaction, account: selectedAccount)
+        }
+    }
     private var month: [Transaction] { currencyTransactions.inCurrentMonth() }
     private var savingsGoals: [SavingsGoal] { SavingsGoalStore.decode(savingsGoalsJSON).filter { $0.currencyCode == currencyCode }.sorted { $0.progress > $1.progress } }
     private var ratio: Double { DomainLogic.budgetProgress(spent: month.expenses, budget: budget) }
@@ -34,8 +45,17 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 20) {
+                    if filterAccounts.count > 1 {
+                        Picker("Wallet Filter", selection: $selectedAccountID) {
+                            Text("All Wallets").tag("")
+                            ForEach(filterAccounts) { Text($0.name).tag($0.id) }
+                        }
+                        .pickerStyle(.menu)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .accessibilityIdentifier("dashboardAccountFilter")
+                    }
                     VStack(alignment: .leading, spacing: 12) {
-                        Label("This Month", systemImage: "leaf.fill").font(.subheadline.weight(.semibold)).foregroundStyle(.white.opacity(0.85))
+                        Label(selectedAccount.map { "This Month · \($0.name)" } ?? "This Month", systemImage: "leaf.fill").font(.subheadline.weight(.semibold)).foregroundStyle(.white.opacity(0.85))
                         Text("Total spent").font(.caption).foregroundStyle(.white.opacity(0.75))
                         Text(AppFormat.money(month.expenses, currencyCode: currencyCode)).font(.largeTitle.bold()).foregroundStyle(.white)
                         HStack { Text("Monthly budget \(AppFormat.money(budget, currencyCode: currencyCode))"); Spacer(); Text(ratio, format: .percent.precision(.fractionLength(0))) }.font(.caption).foregroundStyle(.white)
@@ -45,7 +65,7 @@ struct DashboardView: View {
                             Spacer()
                             Text("Income \(AppFormat.money(month.income, currencyCode: currencyCode))")
                         }.font(.caption.weight(.semibold)).foregroundStyle(.white)
-                    }.padding(20).background(LinearGradient(colors: [.indigo, .teal], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                    }.padding(20).background(LinearGradient(colors: theme.heroColors, startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
 
                     HStack(spacing: 12) {
                         quickAction("Expense", symbol: "arrow.up.right", color: .orange) { addingType = .expense }
@@ -60,11 +80,17 @@ struct DashboardView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 12) {
                             ForEach(accounts) { account in
+                                Button {
+                                    guard account.currencyCode == currencyCode else { return }
+                                    selectedAccountID = selectedAccountID == account.id ? "" : account.id
+                                } label: {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    Image(systemName: account.type.symbol).font(.title3).foregroundStyle(.indigo)
+                                    Image(systemName: account.type.symbol).font(.title3).foregroundStyle(theme.accent)
                                     Text(account.name).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
                                     Text(AppFormat.money(FinancialAccountStore.balance(for: account, transactions: transactions), currencyCode: account.currencyCode)).font(.headline).lineLimit(1).minimumScaleFactor(0.7)
                                 }.frame(width: 180, alignment: .leading).padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(selectedAccountID == account.id ? theme.accent : .clear, lineWidth: 2))
+                                }.buttonStyle(.plain)
                             }
                             }
                         }
@@ -94,8 +120,8 @@ struct DashboardView: View {
 
                     HStack { sectionHeader("Recent Transactions"); NavigationLink("See All") { TransactionsView() }.font(.subheadline) }
                     Group {
-                        if transactions.isEmpty { ContentUnavailableView("No transactions", systemImage: "tray", description: Text("Tap Add to record your first transaction.")) }
-                        else { VStack(spacing: 8) { ForEach(Array(transactions.prefix(4).enumerated()), id: \.element.id) { index, transaction in TransactionRow(transaction: transaction); if index < min(transactions.count, 4) - 1 { Divider() } } } }
+                        if currencyTransactions.isEmpty { ContentUnavailableView("No transactions", systemImage: "tray", description: Text("Tap Add to record your first transaction.")) }
+                        else { VStack(spacing: 8) { ForEach(Array(currencyTransactions.prefix(4).enumerated()), id: \.element.id) { index, transaction in TransactionRow(transaction: transaction); if index < min(currencyTransactions.count, 4) - 1 { Divider() } } } }
                     }.padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     if transactions.contains(where: { ($0.currencyCode ?? currencyCode) != currencyCode }) {
                         Label("Totals include \(currencyCode) transactions only.", systemImage: "info.circle").font(.footnote).foregroundStyle(.secondary)
@@ -104,6 +130,7 @@ struct DashboardView: View {
             }.background(Color(uiColor: .systemGroupedBackground)).navigationTitle("Dashboard")
                 .sheet(item: $addingType) { AddTransactionView(startingType: $0) }
                 .sheet(isPresented: $transferring) { TransferView() }
+                .onChange(of: accountsJSON) { _, _ in if selectedAccount == nil { selectedAccountID = "" } }
         }
     }
     private func quickAction(_ title: LocalizedStringKey, symbol: String, color: Color, action: @escaping () -> Void) -> some View {

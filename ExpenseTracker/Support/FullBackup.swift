@@ -5,6 +5,7 @@ struct LedgerLeafBackup: Codable, Equatable {
         var currencyCode: String
         var monthlyBudget: Double
         var languageCode: String
+        var themeRaw: String? = nil
     }
 
     struct TransactionRecord: Codable, Equatable {
@@ -74,7 +75,9 @@ struct LedgerLeafBackup: Codable, Equatable {
         guard formatVersion == 1 else { throw BackupError.unsupportedVersion }
         let currencies = Set(CurrencyCatalog.all.map(\.code))
         let languages = Set(AppLanguage.supported.map(\.code))
-        guard currencies.contains(preferences.currencyCode), languages.contains(preferences.languageCode), preferences.monthlyBudget.isFinite, preferences.monthlyBudget >= 0,
+        guard currencies.contains(preferences.currencyCode), languages.contains(preferences.languageCode),
+              preferences.themeRaw.map { AppTheme(rawValue: $0) != nil } ?? true,
+              preferences.monthlyBudget.isFinite, preferences.monthlyBudget >= 0,
               Set(transactions.map(\.id)).count == transactions.count,
               transactions.allSatisfy({ $0.amount.isFinite && $0.amount > 0 && currencies.contains($0.currencyCode) }),
               Set(customCategories.map(\.id)).count == customCategories.count,

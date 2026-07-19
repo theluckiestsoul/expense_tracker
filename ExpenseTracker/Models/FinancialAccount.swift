@@ -40,12 +40,15 @@ enum FinancialAccountStore {
     }
     static func balance(for account: FinancialAccount, transactions: [Transaction]) -> Double {
         let relevant = transactions.filter { transaction in
-            (transaction.accountID == account.id || (transaction.accountID == nil && account.isDefault))
+            matches(transaction, account: account)
                 && (transaction.currencyCode ?? account.currencyCode) == account.currencyCode
         }
         let credits = relevant.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
         let debits = relevant.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
         return account.openingBalance + credits - debits
+    }
+    static func matches(_ transaction: Transaction, account: FinancialAccount) -> Bool {
+        transaction.accountID == account.id || (transaction.accountID == nil && account.isDefault)
     }
 }
 

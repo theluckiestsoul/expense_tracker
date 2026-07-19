@@ -3,7 +3,7 @@ import SwiftData
 import UniformTypeIdentifiers
 
 extension UTType {
-    static let ledgerLeafBackup = UTType(exportedAs: "com.theluckiestsoul.ledgerleaf.backup", conformingTo: .json)
+    static let ledgerLeafBackup = UTType(importedAs: "com.theluckiestsoul.ledgerleaf.backup", conformingTo: .json)
 }
 
 struct BackupDocument: FileDocument {
@@ -22,12 +22,15 @@ struct CSVDocument: FileDocument {
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: Data(text.utf8)) }
 }
 
+private enum CSVExportKind { case transactions, template }
+
 struct SettingsView: View {
     @Environment(\.modelContext) private var context
     @Query private var transactions: [Transaction]
     @AppStorage("monthlyBudget") private var budget = 30000.0
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(AppLanguage.storageKey) private var languageCode = ""
+    @AppStorage(AppTheme.storageKey) private var themeRaw = AppTheme.system.rawValue
     @AppStorage(PrivacyLock.storageKey) private var privacyLockEnabled = false
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @AppStorage(RecurringTransactionStore.storageKey) private var recurringTransactionsJSON = ""
@@ -36,6 +39,7 @@ struct SettingsView: View {
     @AppStorage(CategoryBudgetStore.storageKey) private var categoryBudgetsJSON = ""
     @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
     @State private var exporting = false
+    @State private var csvExportKind: CSVExportKind = .transactions
     @State private var importing = false
     @State private var exportingBackup = false
     @State private var importingBackup = false
@@ -57,6 +61,10 @@ struct SettingsView: View {
                             else { Text(language.name).tag(language.code) }
                         }
                     }
+                    Picker("App Theme", selection: $themeRaw) {
+                        ForEach(AppTheme.allCases) { theme in Text(theme.title).tag(theme.rawValue) }
+                    }
+                    .accessibilityIdentifier("appThemePicker")
                     TextField("Monthly Budget", value: $budget, format: .number)
                         .keyboardType(.decimalPad)
                         .focused($isBudgetFieldFocused)
@@ -97,8 +105,12 @@ struct SettingsView: View {
                         .accessibilityIdentifier("exportCompleteBackup")
                     Button("Restore Complete Backup") { importingBackup = true }
                         .accessibilityIdentifier("restoreCompleteBackup")
-                    Button("Export Data (CSV)") { exporting = true }.disabled(transactions.isEmpty)
-                    Button("Import Data (CSV)") { importing = true }
+                    Button("Export Transactions (CSV)") { csvExportKind = .transactions; exporting = true }.disabled(transactions.isEmpty)
+                    Button("Import Transactions (CSV)") { importing = true }
+                    NavigationLink("CSV Import Guide") { CSVImportGuideView(downloadTemplate: { csvExportKind = .template; exporting = true }) }
+                        .accessibilityIdentifier("csvImportGuide")
+                    Text("CSV imports add transactions only and skip duplicates. Complete Backup includes wallets, budgets, goals, schedules, and preferences.")
+                        .font(.footnote).foregroundStyle(.secondary)
                     Button("Delete All Transactions", role: .destructive) { confirmingDeleteAll = true }.disabled(transactions.isEmpty)
                 }
                 Section("Help & Legal") {
@@ -119,7 +131,7 @@ struct SettingsView: View {
                     }
                 }
                 .onAppear { selectedCurrency = currencyCode }
-                .fileExporter(isPresented: $exporting, document: CSVDocument(text: csv), contentType: .commaSeparatedText, defaultFilename: "ledgerleaf-transactions.csv") { result in
+                .fileExporter(isPresented: $exporting, document: CSVDocument(text: csvExportText), contentType: .commaSeparatedText, defaultFilename: csvExportFilename) { result in
                     if case .failure(let error) = result { showError(error) }
                 }
                 .fileImporter(isPresented: $importing, allowedContentTypes: [.commaSeparatedText, .plainText]) { result in
@@ -163,10 +175,13 @@ struct SettingsView: View {
             }
         return DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders] + rows)
     }
+    private var csvTemplate: String { DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders]) }
+    private var csvExportText: String { csvExportKind == .template ? csvTemplate : csv }
+    private var csvExportFilename: String { csvExportKind == .template ? "ledgerleaf-import-template.csv" : "ledgerleaf-transactions.csv" }
     private var completeBackup: LedgerLeafBackup {
         LedgerLeafBackup(
             formatVersion: 1, exportedAt: .now,
-            preferences: .init(currencyCode: currencyCode, monthlyBudget: budget, languageCode: languageCode),
+            preferences: .init(currencyCode: currencyCode, monthlyBudget: budget, languageCode: languageCode, themeRaw: themeRaw),
             transactions: transactions.map { .init($0, fallbackCurrency: currencyCode) },
             customCategories: CustomCategoryCatalog.decode(customCategoriesJSON),
             accounts: FinancialAccountStore.decode(accountsJSON),
@@ -211,6 +226,7 @@ struct SettingsView: View {
             try context.save()
             currencyCode = backup.preferences.currencyCode; selectedCurrency = currencyCode
             budget = backup.preferences.monthlyBudget; languageCode = backup.preferences.languageCode
+            if let restoredTheme = backup.preferences.themeRaw { themeRaw = restoredTheme }
             customCategoriesJSON = CustomCategoryCatalog.encode(backup.customCategories)
             accountsJSON = FinancialAccountStore.encode(backup.accounts)
             categoryBudgetsJSON = CategoryBudgetStore.encode(backup.categoryBudgets)
@@ -310,5 +326,40 @@ struct SettingsView: View {
                 showError(error)
             }
         }
+    }
+}
+
+private struct CSVImportGuideView: View {
+    let downloadTemplate: () -> Void
+
+    var body: some View {
+        List {
+            Section("Recommended") {
+                Label("Import a CSV previously exported by LedgerLeaf.", systemImage: "checkmark.shield.fill")
+                Text("Imports merge with your current data. Existing transactions are kept and matching duplicates are skipped.")
+                    .foregroundStyle(.secondary)
+            }
+            Section("Create Your Own CSV") {
+                Button("Download Empty CSV Template", action: downloadTemplate)
+                    .accessibilityIdentifier("downloadCSVTemplate")
+                Text("Keep the header row unchanged and add one transaction per row. Spreadsheet apps such as Numbers, Excel, and Google Sheets can edit the file; save it as CSV before importing.")
+                LabeledContent("Amount", value: "Positive number, for example 24.50")
+                LabeledContent("Currency", value: "Three-letter code, for example USD or INR")
+                LabeledContent("Type", value: "expense or income")
+                LabeledContent("Dates", value: "ISO 8601, for example 2026-07-19T10:30:00Z")
+                LabeledContent("Optional", value: "Merchant, Notes, Transfer ID")
+            }
+            Section("Columns (in this order)") {
+                ForEach(Array(DomainLogic.transactionCSVHeaders.enumerated()), id: \.offset) { index, header in
+                    LabeledContent("\(index + 1)", value: header)
+                }
+            }
+            Section("Important") {
+                Text("Category and Payment Method values are safest when copied from a LedgerLeaf export. Custom categories also require a supported Category Symbol and Category Color.")
+                Text("CSV does not restore wallets or assign imported rows to a wallet. Use Complete Backup when moving all LedgerLeaf data to another device.")
+            }
+        }
+        .navigationTitle("CSV Import Guide")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }

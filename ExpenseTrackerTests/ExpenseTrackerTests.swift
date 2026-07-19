@@ -22,7 +22,7 @@ final class ExpenseTrackerTests: XCTestCase {
                                       currencyCode: "USD", transactionDate: fixedDate, merchant: "Cafe")
         transaction.createdAt = fixedDate; transaction.updatedAt = fixedDate
         let backup = LedgerLeafBackup(formatVersion: 1, exportedAt: fixedDate,
-            preferences: .init(currencyCode: "USD", monthlyBudget: 2_000, languageCode: "en"),
+            preferences: .init(currencyCode: "USD", monthlyBudget: 2_000, languageCode: "en", themeRaw: AppTheme.ocean.rawValue),
             transactions: [.init(transaction, fallbackCurrency: "USD")], customCategories: [],
             accounts: [FinancialAccount(name: "Cash", type: .cash, currencyCode: "USD")],
             categoryBudgets: [], savingsGoals: [], recurringTransactions: [])
@@ -99,6 +99,28 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(restored[0].categoryRaw, ExpenseCategory.food.rawValue)
         XCTAssertEqual(restored[0].merchant, "Cafe, Central")
         XCTAssertEqual(restored[0].notes, "He said \"hello\"")
+    }
+
+    func testEmptyCSVTemplateIsValidAndImportsNoTransactions() throws {
+        let template = DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders])
+        XCTAssertEqual(try CSVBackup.importTransactions(from: template), [])
+    }
+
+    func testThemesHaveStableUniqueValues() {
+        XCTAssertEqual(Set(AppTheme.allCases.map(\.rawValue)).count, AppTheme.allCases.count)
+        XCTAssertEqual(AppTheme(rawValue: "ocean"), .ocean)
+        XCTAssertEqual(AppTheme(rawValue: "unknown") ?? .system, .system)
+    }
+
+    func testLegacyTransactionMatchesDefaultWalletFilter() {
+        let defaultAccount = FinancialAccount(id: "default", name: "Everyday", type: .cash, currencyCode: "USD", isDefault: true)
+        let otherAccount = FinancialAccount(id: "other", name: "Savings", type: .bank, currencyCode: "USD")
+        let transaction = Transaction(amount: 10, type: .expense, category: .food, paymentMethod: .cash,
+                                      currencyCode: "USD", transactionDate: .now, merchant: "Cafe")
+        XCTAssertTrue(FinancialAccountStore.matches(transaction, account: defaultAccount))
+        XCTAssertFalse(FinancialAccountStore.matches(transaction, account: otherAccount))
+        transaction.accountID = otherAccount.id
+        XCTAssertTrue(FinancialAccountStore.matches(transaction, account: otherAccount))
     }
 
     func testCustomCategoryRoundTripsThroughCSV() throws {
