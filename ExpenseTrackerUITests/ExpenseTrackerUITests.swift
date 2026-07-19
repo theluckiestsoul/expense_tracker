@@ -99,6 +99,17 @@ final class ExpenseTrackerUITests: XCTestCase {
         app.buttons["applyTransactionFilters"].tap()
     }
 
+    func testReportPeriodAndCashFlowEmptyState() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+
+        app.tabBars.buttons["Reports"].tap()
+        XCTAssertTrue(app.segmentedControls["reportPeriodPicker"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Cash Flow"].exists)
+        XCTAssertTrue(app.staticTexts["Savings Rate"].exists)
+    }
+
     func testPersianLocalization() {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(fa)", "-AppleLocale", "fa_IR"]

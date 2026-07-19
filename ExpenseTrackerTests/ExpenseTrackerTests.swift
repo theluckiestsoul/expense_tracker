@@ -79,6 +79,25 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertNil(CategoryBudgetStore.budget(for: ExpenseCategory.food.rawValue, currencyCode: "EUR", in: restored))
     }
 
+    func testReportCashFlowAndSavingsRate() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let january10 = calendar.date(from: DateComponents(year: 2026, month: 1, day: 10))!
+        let january11 = calendar.date(from: DateComponents(year: 2026, month: 1, day: 11))!
+        let february1 = calendar.date(from: DateComponents(year: 2026, month: 2, day: 1))!
+        let income = Transaction(amount: 1_000, type: .income, category: .salary, paymentMethod: .bank, currencyCode: "USD", transactionDate: january10, merchant: "Employer")
+        let food = Transaction(amount: 200, type: .expense, category: .food, paymentMethod: .card, currencyCode: "USD", transactionDate: january10, merchant: "Market")
+        let travel = Transaction(amount: 100, type: .expense, category: .travel, paymentMethod: .cash, currencyCode: "USD", transactionDate: january11, merchant: "Metro")
+
+        let daily = ReportCalculator.cashFlow(transactions: [income, food, travel], period: .month, now: january11, calendar: calendar)
+        XCTAssertEqual(daily.count, 3)
+        XCTAssertEqual(daily.first { $0.date == january10 && $0.type == .income }?.amount, 1_000)
+        XCTAssertEqual(daily.first { $0.date == january10 && $0.type == .expense }?.amount, 200)
+        XCTAssertEqual(ReportCalculator.savingsRate(income: 1_000, expenses: 300), 0.7)
+        XCTAssertNil(ReportCalculator.savingsRate(income: 0, expenses: 300))
+        XCTAssertFalse(ReportPeriod.month.includes(february1, now: january11, calendar: calendar))
+    }
+
     func testMismatchedCategoryFallsBackSafely() {
         let transaction = Transaction(amount: 1, type: .income, category: .food, paymentMethod: .cash, currencyCode: "USD", transactionDate: .now, merchant: "")
         XCTAssertEqual(transaction.category, .otherIncome)
