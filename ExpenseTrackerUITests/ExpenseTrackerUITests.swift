@@ -76,6 +76,29 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.keyboards.element.waitForNonExistence(timeout: 3))
     }
 
+    func testCreateCategoryBudgetAndOpenTransactionFilters() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-categoryBudgetsJSON", "[]"]
+        app.launch()
+
+        app.tabBars.buttons["Settings"].tap()
+        app.buttons["categoryBudgetsLink"].tap()
+        let foodBudget = app.buttons["categoryBudget_Food & Dining"]
+        XCTAssertTrue(foodBudget.waitForExistence(timeout: 5))
+        foodBudget.tap()
+        let amount = app.textFields["categoryBudgetAmount"]
+        XCTAssertTrue(amount.waitForExistence(timeout: 5))
+        amount.typeText("500")
+        app.buttons["saveCategoryBudget"].tap()
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '500'")).element.waitForExistence(timeout: 5))
+
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        app.tabBars.buttons["Transactions"].tap()
+        app.buttons["transactionFiltersButton"].tap()
+        XCTAssertTrue(app.navigationBars["Filter Transactions"].waitForExistence(timeout: 5))
+        app.buttons["applyTransactionFilters"].tap()
+    }
+
     func testPersianLocalization() {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(fa)", "-AppleLocale", "fa_IR"]

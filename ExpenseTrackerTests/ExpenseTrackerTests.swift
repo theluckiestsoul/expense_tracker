@@ -66,6 +66,19 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertTrue(ExpenseCategory.incomeCases.allSatisfy(\.isIncome))
     }
 
+    func testCategoryBudgetsRoundTripAndRemainCurrencySpecific() {
+        let source = [
+            CategoryBudget(categoryID: ExpenseCategory.food.rawValue, currencyCode: "USD", amount: 500),
+            CategoryBudget(categoryID: ExpenseCategory.food.rawValue, currencyCode: "INR", amount: 10_000)
+        ]
+        let restored = CategoryBudgetStore.decode(CategoryBudgetStore.encode(source))
+
+        XCTAssertEqual(Set(restored), Set(source))
+        XCTAssertEqual(CategoryBudgetStore.budget(for: ExpenseCategory.food.rawValue, currencyCode: "USD", in: restored)?.amount, 500)
+        XCTAssertEqual(CategoryBudgetStore.budget(for: ExpenseCategory.food.rawValue, currencyCode: "INR", in: restored)?.amount, 10_000)
+        XCTAssertNil(CategoryBudgetStore.budget(for: ExpenseCategory.food.rawValue, currencyCode: "EUR", in: restored))
+    }
+
     func testMismatchedCategoryFallsBackSafely() {
         let transaction = Transaction(amount: 1, type: .income, category: .food, paymentMethod: .cash, currencyCode: "USD", transactionDate: .now, merchant: "")
         XCTAssertEqual(transaction.category, .otherIncome)

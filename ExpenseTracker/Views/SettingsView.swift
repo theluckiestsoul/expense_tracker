@@ -54,6 +54,8 @@ struct SettingsView: View {
                     ))
                     NavigationLink("Custom Categories") { CustomCategoriesView() }
                         .accessibilityIdentifier("customCategoriesLink")
+                    NavigationLink("Category Budgets") { CategoryBudgetsView() }
+                        .accessibilityIdentifier("categoryBudgetsLink")
                     NavigationLink("Recurring Transactions") { RecurringTransactionsView() }
                         .accessibilityIdentifier("recurringTransactionsLink")
                 }
