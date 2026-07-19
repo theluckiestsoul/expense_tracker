@@ -85,6 +85,7 @@ struct AddTransactionView: View {
                 Section("Details") {
                     if accounts.count > 1 {
                         Picker("Wallet or Account", selection: $accountID) {
+                            Text("Not Assigned").tag("")
                             ForEach(accounts) { account in Text("\(account.name) (\(account.currencyCode))").tag(account.id) }
                         }.onChange(of: accountID) { _, value in
                             if let account = accounts.first(where: { $0.id == value }) { transactionCurrency = account.currencyCode }
@@ -97,6 +98,11 @@ struct AddTransactionView: View {
                     }
                     Picker("Payment Method", selection: $payment) { ForEach(PaymentMethod.allCases) { Text($0.displayName).tag($0) } }
                     Picker("Currency", selection: $transactionCurrency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }
+                        .onChange(of: transactionCurrency) { _, value in
+                            if FinancialAccountStore.validAssignment(accountID, currencyCode: value, in: accounts) == nil {
+                                accountID = ""
+                            }
+                        }
                     DatePicker("Date", selection: $date)
                     TextField("Merchant / description", text: $merchant).textInputAutocapitalization(.words)
                 }
@@ -108,9 +114,11 @@ struct AddTransactionView: View {
                 .alert(alertTitle, isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
                 .onChange(of: receiptItem) { _, item in if let item { scanReceipt(item) } }
                 .onAppear {
-                    if accountID.isEmpty { accountID = accounts.first(where: \.isDefault)?.id ?? accounts.first?.id ?? "" }
+                    if transaction == nil && !isDuplicate && accountID.isEmpty {
+                        accountID = accounts.first(where: { $0.isDefault && $0.currencyCode == currencyCode })?.id ?? ""
+                    }
                     if let account = accounts.first(where: { $0.id == accountID }) { transactionCurrency = account.currencyCode }
-                    else if transaction == nil { transactionCurrency = currencyCode }
+                    else if transaction == nil && !isDuplicate { transactionCurrency = currencyCode }
                 }
         }
     }
@@ -123,11 +131,11 @@ struct AddTransactionView: View {
             transaction.paymentMethod = payment; transaction.currencyCode = transactionCurrency
             transaction.transactionDate = date; transaction.merchant = cleanMerchant
             transaction.notes = cleanNotes; transaction.updatedAt = .now
-            transaction.accountID = accountID.isEmpty ? nil : accountID
+            transaction.accountID = FinancialAccountStore.validAssignment(accountID, currencyCode: transactionCurrency, in: accounts)
         } else {
             let newTransaction = Transaction(amount: value, type: type, category: ExpenseCategory.cases(for: type)[0], paymentMethod: payment, currencyCode: transactionCurrency, transactionDate: date, merchant: cleanMerchant, notes: cleanNotes)
             newTransaction.categoryRaw = categoryID
-            newTransaction.accountID = accountID.isEmpty ? nil : accountID
+            newTransaction.accountID = FinancialAccountStore.validAssignment(accountID, currencyCode: transactionCurrency, in: accounts)
             context.insert(newTransaction)
         }
         do { try context.save(); dismiss() } catch { alertTitle = "Couldn’t Save"; errorMessage = error.localizedDescription }

@@ -75,6 +75,14 @@ struct LedgerLeafBackup: Codable, Equatable {
         guard formatVersion == 1 else { throw BackupError.unsupportedVersion }
         let currencies = Set(CurrencyCatalog.all.map(\.code))
         let languages = Set(AppLanguage.supported.map(\.code))
+        let accountsByID = Dictionary(accounts.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let hasValidAccountReferences = transactions.allSatisfy { transaction in
+            guard let accountID = transaction.accountID else { return true }
+            return accountsByID[accountID]?.currencyCode == transaction.currencyCode
+        } && recurringTransactions.allSatisfy { schedule in
+            guard let accountID = schedule.accountID else { return true }
+            return accountsByID[accountID]?.currencyCode == schedule.currencyCode
+        }
         guard currencies.contains(preferences.currencyCode), languages.contains(preferences.languageCode),
               preferences.themeRaw.map({ AppTheme(rawValue: $0) != nil }) ?? true,
               preferences.monthlyBudget.isFinite, preferences.monthlyBudget >= 0,
@@ -83,7 +91,9 @@ struct LedgerLeafBackup: Codable, Equatable {
               Set(customCategories.map(\.id)).count == customCategories.count,
               customCategories.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && CustomCategoryCatalog.symbols.contains($0.symbol) && CustomCategoryCatalog.colors.contains($0.colorName) }),
               Set(accounts.map(\.id)).count == accounts.count,
-              accounts.allSatisfy({ $0.openingBalance.isFinite && currencies.contains($0.currencyCode) }),
+              accounts.allSatisfy({ !$0.id.isEmpty && !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && $0.openingBalance.isFinite && currencies.contains($0.currencyCode) }),
+              accounts.filter(\.isDefault).count <= 1,
+              hasValidAccountReferences,
               Set(categoryBudgets.map(\.id)).count == categoryBudgets.count,
               categoryBudgets.allSatisfy({ $0.amount.isFinite && $0.amount > 0 && currencies.contains($0.currencyCode) }),
               Set(savingsGoals.map(\.id)).count == savingsGoals.count,

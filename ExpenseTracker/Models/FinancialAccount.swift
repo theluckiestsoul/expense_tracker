@@ -50,6 +50,12 @@ enum FinancialAccountStore {
     static func matches(_ transaction: Transaction, account: FinancialAccount) -> Bool {
         transaction.accountID == account.id || (transaction.accountID == nil && account.isDefault)
     }
+    static func validAssignment(_ accountID: String, currencyCode: String, in accounts: [FinancialAccount]) -> String? {
+        guard !accountID.isEmpty,
+              let account = accounts.first(where: { $0.id == accountID && !$0.isArchived }),
+              account.currencyCode == currencyCode else { return nil }
+        return account.id
+    }
 }
 
 enum AccountTransfer {

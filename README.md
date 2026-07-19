@@ -28,6 +28,8 @@ Optional Wallets & Accounts represent where money is kept or owed, such as cash,
 
 Same-currency account transfers update both balances using a linked debit and credit. Transfers are excluded from spending, income, budgets, savings rate, and reports, and deleting either side removes the complete transfer.
 
+Wallet/account assignment is optional. When used, it separates balances such as cash, bank, card, and digital wallet; LedgerLeaf prevents a transaction from being assigned to an account with a different currency and locks an account currency once transaction history exists.
+
 Savings goals track target and saved amounts in any supported currency, with an optional completion date. Goal progress appears on the dashboard and can be updated from Settings; all goal data remains on the device.
 
 The interface automatically follows the user's supported iOS language. Current localizations include English, Persian, Spanish, French, Brazilian Portuguese, Simplified Chinese, Arabic, and 20 scheduled languages of India: Assamese, Bengali, Dogri, Gujarati, Hindi, Kannada, Konkani, Maithili, Malayalam, Manipuri, Marathi, Nepali, Odia, Punjabi, Sanskrit, Santali, Sindhi, Tamil, Telugu, and Urdu. English is used as the fallback for other languages. Bodo and Kashmiri are temporarily unavailable until genuine native translations replace the previous fallback copies.

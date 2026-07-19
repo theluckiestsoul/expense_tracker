@@ -146,6 +146,37 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertTrue(FinancialAccountStore.matches(transaction, account: otherAccount))
     }
 
+    func testAccountAssignmentRequiresMatchingCurrencyAndActiveAccount() {
+        let usd = FinancialAccount(id: "usd", name: "USD Bank", type: .bank, currencyCode: "USD")
+        let archived = FinancialAccount(id: "old", name: "Old Wallet", type: .wallet, currencyCode: "USD", isArchived: true)
+        let accounts = [usd, archived]
+
+        XCTAssertEqual(FinancialAccountStore.validAssignment("usd", currencyCode: "USD", in: accounts), "usd")
+        XCTAssertNil(FinancialAccountStore.validAssignment("usd", currencyCode: "EUR", in: accounts))
+        XCTAssertNil(FinancialAccountStore.validAssignment("old", currencyCode: "USD", in: accounts))
+        XCTAssertNil(FinancialAccountStore.validAssignment("missing", currencyCode: "USD", in: accounts))
+        XCTAssertNil(FinancialAccountStore.validAssignment("", currencyCode: "USD", in: accounts))
+    }
+
+    func testBackupRejectsMismatchedOrMissingAccountReferences() throws {
+        let account = FinancialAccount(id: "usd", name: "Bank", type: .bank, currencyCode: "USD")
+        let transaction = Transaction(amount: 10, type: .expense, category: .food, paymentMethod: .card,
+                                      currencyCode: "EUR", transactionDate: .now, merchant: "Cafe")
+        transaction.accountID = account.id
+        var backup = LedgerLeafBackup(
+            formatVersion: 1, exportedAt: .now,
+            preferences: .init(currencyCode: "USD", monthlyBudget: 100, languageCode: "en"),
+            transactions: [.init(transaction, fallbackCurrency: "USD")], customCategories: [], accounts: [account],
+            categoryBudgets: [], savingsGoals: [], recurringTransactions: []
+        )
+
+        XCTAssertThrowsError(try backup.validate())
+        backup.transactions[0].currencyCode = "USD"
+        XCTAssertNoThrow(try backup.validate())
+        backup.transactions[0].accountID = "missing"
+        XCTAssertThrowsError(try backup.validate())
+    }
+
     func testCustomCategoryRoundTripsThroughCSV() throws {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
         let row = ["10.0", "USD", "expense", "Pets", "Cash", date.ISO8601Format(), "", "",

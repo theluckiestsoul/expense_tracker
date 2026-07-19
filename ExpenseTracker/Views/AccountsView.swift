@@ -34,6 +34,7 @@ struct AccountsView: View {
             }
         }
         .navigationTitle("Wallets & Accounts").navigationBarTitleDisplayMode(.inline)
+        .onAppear(perform: ensureDefaultAccount)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
                 if canTransfer {
@@ -42,8 +43,11 @@ struct AccountsView: View {
                 Button { adding = true } label: { Image(systemName: "plus") }.accessibilityIdentifier("addAccount")
             }
         }
-        .sheet(isPresented: $adding) { AccountEditor(existing: nil, defaultCurrency: currencyCode, onSave: save) }
-        .sheet(item: $editing) { AccountEditor(existing: $0, defaultCurrency: currencyCode, onSave: save) }
+        .sheet(isPresented: $adding) { AccountEditor(existing: nil, defaultCurrency: currencyCode, currencyLocked: false, onSave: save) }
+        .sheet(item: $editing) { account in
+            AccountEditor(existing: account, defaultCurrency: currencyCode,
+                          currencyLocked: transactions.contains { $0.accountID == account.id }, onSave: save)
+        }
         .sheet(isPresented: $transferring) { TransferView() }
     }
     private func save(_ account: FinancialAccount) {
@@ -51,18 +55,24 @@ struct AccountsView: View {
         if let index = updated.firstIndex(where: { $0.id == account.id }) { updated[index] = account } else { updated.append(account) }
         accountsJSON = FinancialAccountStore.encode(updated)
     }
+    private func ensureDefaultAccount() {
+        let updated = FinancialAccountStore.ensuringDefault(in: accounts, currencyCode: currencyCode)
+        if updated != accounts { accountsJSON = FinancialAccountStore.encode(updated) }
+    }
 }
 
 private struct AccountEditor: View {
     @Environment(\.dismiss) private var dismiss
     let existing: FinancialAccount?
+    let currencyLocked: Bool
     let onSave: (FinancialAccount) -> Void
     @State private var name: String
     @State private var type: FinancialAccountType
     @State private var currency: String
     @State private var openingBalance: String
-    init(existing: FinancialAccount?, defaultCurrency: String, onSave: @escaping (FinancialAccount) -> Void) {
+    init(existing: FinancialAccount?, defaultCurrency: String, currencyLocked: Bool, onSave: @escaping (FinancialAccount) -> Void) {
         self.existing = existing; self.onSave = onSave
+        self.currencyLocked = currencyLocked
         _name = State(initialValue: existing?.name ?? "")
         _type = State(initialValue: existing?.type ?? .bank)
         _currency = State(initialValue: existing?.currencyCode ?? defaultCurrency)
@@ -75,9 +85,12 @@ private struct AccountEditor: View {
                     TextField("Wallet or Account Name", text: $name).accessibilityIdentifier("accountName")
                     Picker("Type", selection: $type) { ForEach(FinancialAccountType.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) } }
                     Picker("Currency", selection: $currency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }
+                        .disabled(currencyLocked)
                     TextField("Current Balance When Added", text: $openingBalance).keyboardType(.numbersAndPunctuation)
                 } footer: {
-                    Text("For example: Cash Wallet, Main Bank, Travel Card, or Paytm. The starting balance is used only as the baseline for future transactions.")
+                    Text(currencyLocked
+                         ? "Currency can’t be changed after transactions have been assigned to this account. The starting balance is the baseline before those transactions."
+                         : "For example: Cash Wallet, Main Bank, Travel Card, or Paytm. The starting balance is used only as the baseline for future transactions.")
                 }
             }.navigationTitle(existing == nil ? "Add Wallet or Account" : "Edit Wallet or Account").navigationBarTitleDisplayMode(.inline)
                 .toolbar {
