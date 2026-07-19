@@ -3,6 +3,19 @@ import SwiftData
 @testable import ExpenseTracker
 
 final class ExpenseTrackerTests: XCTestCase {
+    func testReceiptTextParserFindsMerchantTotalAndDate() {
+        let result = ReceiptTextParser.parse(lines: ["GREEN LEAF CAFE", "GSTIN 12345", "12/07/2026", "Subtotal 1,100.00", "Tax 55.00", "GRAND TOTAL INR 1,155.00"], locale: Locale(identifier: "en_IN"))
+        XCTAssertEqual(result.merchant, "GREEN LEAF CAFE")
+        XCTAssertEqual(result.amount, 1_155)
+        let components = Calendar.current.dateComponents([.year, .month, .day], from: result.date!)
+        XCTAssertEqual(components.year, 2026); XCTAssertEqual(components.month, 7); XCTAssertEqual(components.day, 12)
+    }
+
+    func testReceiptTextParserHandlesMissingFieldsAndAvoidsBareNumbers() {
+        let result = ReceiptTextParser.parse(lines: ["Receipt", "Order 20260712", "Thank you"])
+        XCTAssertNil(result.amount); XCTAssertNil(result.merchant); XCTAssertNil(result.date)
+    }
+
     func testCompleteBackupRoundTripsAndRejectsInvalidData() throws {
         let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
         let transaction = Transaction(amount: 25, type: .expense, category: .food, paymentMethod: .card,

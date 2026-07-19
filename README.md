@@ -14,6 +14,8 @@ Monthly category budgets are currency-specific and appear on the dashboard with 
 
 Existing income and expenses can be duplicated from the transaction list using a leading swipe or long press. LedgerLeaf copies the details into a review form with today's date and always creates a separate transaction; linked account transfers cannot be duplicated.
 
+Receipt scanning uses Apple's photo picker and on-device Vision OCR to suggest the total, merchant, and date from a receipt image. Suggestions remain editable, and the selected image is neither uploaded nor stored.
+
 Reports support weekly, monthly, yearly, and all-time views with income-versus-expense cash-flow charts, net cash flow, savings rate, and period-aware category breakdowns.
 
 Optional bill reminders schedule private, on-device notifications one day before active recurring expenses. Notification access is requested only when the user enables Bill Reminders in Settings.

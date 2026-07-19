@@ -1,6 +1,6 @@
 # LedgerLeaf Privacy Policy
 
-Last updated: July 18, 2026
+Last updated: July 19, 2026
 
 LedgerLeaf is designed to work without an account. Transaction amounts, categories, notes, merchants, currencies, budgets, and preferences are stored locally on your device.
 
@@ -13,6 +13,10 @@ LedgerLeaf does not collect, transmit, sell, or share personal information. The 
 You may export your transaction data as a CSV file. The file is sent only to the destination you select through Apple's system share and file interfaces. You are responsible for protecting exported files.
 
 You may also select a LedgerLeaf CSV backup to restore transactions. The selected file is processed locally and is not uploaded or transmitted by LedgerLeaf.
+
+## Receipt scanning
+
+Receipt scanning uses Apple's system photo picker and on-device Vision text recognition. Selected images are processed temporarily to suggest an amount, merchant, and date. LedgerLeaf does not upload or retain the receipt image.
 
 ## Privacy lock
 

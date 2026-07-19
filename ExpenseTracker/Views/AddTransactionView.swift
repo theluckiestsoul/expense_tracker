@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct AddTransactionView: View {
     @Environment(\.dismiss) private var dismiss
@@ -19,6 +20,10 @@ struct AddTransactionView: View {
     @State private var notes: String
     @State private var accountID: String
     @State private var errorMessage: String?
+    @State private var alertTitle = "Couldn’t Save"
+    @State private var receiptItem: PhotosPickerItem?
+    @State private var isScanningReceipt = false
+    private let receiptScanner = ReceiptScanner()
 
     init(transaction: Transaction? = nil) {
         self.transaction = transaction
@@ -70,6 +75,12 @@ struct AddTransactionView: View {
                         TextField("0.00", text: $amount).font(.largeTitle).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
                             .accessibilityIdentifier("amountField")
                     }
+                    PhotosPicker(selection: $receiptItem, matching: .images) {
+                        Label(isScanningReceipt ? "Scanning Receipt…" : "Scan Receipt or Image", systemImage: "doc.text.viewfinder")
+                    }
+                    .disabled(isScanningReceipt)
+                    .accessibilityIdentifier("scanReceipt")
+                    if isScanningReceipt { ProgressView().frame(maxWidth: .infinity) }
                 }
                 Section("Details") {
                     if accounts.count > 1 {
@@ -94,7 +105,8 @@ struct AddTransactionView: View {
                 }
             }.navigationTitle(isDuplicate ? "Duplicate Transaction" : (transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction"))).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveTransactionButton") } }
-                .alert("Couldn’t Save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
+                .alert(alertTitle, isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
+                .onChange(of: receiptItem) { _, item in if let item { scanReceipt(item) } }
                 .onAppear {
                     if accountID.isEmpty { accountID = accounts.first(where: \.isDefault)?.id ?? accounts.first?.id ?? "" }
                     if let account = accounts.first(where: { $0.id == accountID }) { transactionCurrency = account.currencyCode }
@@ -103,7 +115,7 @@ struct AddTransactionView: View {
         }
     }
     private func save() {
-        guard let value = DomainLogic.parseAmount(amount) else { errorMessage = AppLanguage.localized("Enter a valid amount greater than zero."); return }
+        guard let value = DomainLogic.parseAmount(amount) else { alertTitle = "Couldn’t Save"; errorMessage = AppLanguage.localized("Enter a valid amount greater than zero."); return }
         let cleanMerchant = DomainLogic.sanitizedText(merchant, maximumLength: 80)
         let cleanNotes = DomainLogic.sanitizedText(notes, maximumLength: 500)
         if let transaction {
@@ -118,7 +130,21 @@ struct AddTransactionView: View {
             newTransaction.accountID = accountID.isEmpty ? nil : accountID
             context.insert(newTransaction)
         }
-        do { try context.save(); dismiss() } catch { errorMessage = error.localizedDescription }
+        do { try context.save(); dismiss() } catch { alertTitle = "Couldn’t Save"; errorMessage = error.localizedDescription }
+    }
+
+    private func scanReceipt(_ item: PhotosPickerItem) {
+        isScanningReceipt = true
+        Task { @MainActor in
+            defer { isScanningReceipt = false; receiptItem = nil }
+            do {
+                guard let data = try await item.loadTransferable(type: Data.self) else { throw ReceiptScanner.ScanError.invalidImage }
+                let result = try await receiptScanner.scan(data: data)
+                if amount.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, let scanned = result.amount { amount = String(format: "%.2f", scanned) }
+                if merchant.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, let scanned = result.merchant { merchant = scanned }
+                if let scanned = result.date { date = scanned }
+            } catch { alertTitle = "Receipt Not Recognized"; errorMessage = error.localizedDescription }
+        }
     }
 
     private func categoryOptions(for type: TransactionType) -> [CategoryPresentation] {

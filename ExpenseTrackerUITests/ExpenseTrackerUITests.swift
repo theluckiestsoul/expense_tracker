@@ -13,6 +13,7 @@ final class ExpenseTrackerUITests: XCTestCase {
         app.tabBars.buttons["Add"].tap()
         XCTAssertTrue(app.navigationBars["Add Transaction"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.textFields["amountField"].exists)
+        XCTAssertTrue(app.buttons["scanReceipt"].exists)
         XCTAssertFalse(app.buttons["saveTransactionButton"].isEnabled)
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 5))
