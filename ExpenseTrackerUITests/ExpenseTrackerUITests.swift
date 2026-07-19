@@ -98,6 +98,7 @@ final class ExpenseTrackerUITests: XCTestCase {
         name.tap(); name.typeText("Savings")
         app.buttons["saveAccount"].tap()
         XCTAssertTrue(app.staticTexts["Savings"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["transferMoney"].exists)
     }
 
     func testCreateCategoryBudgetAndOpenTransactionFilters() {

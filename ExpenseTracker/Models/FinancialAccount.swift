@@ -43,6 +43,20 @@ enum FinancialAccountStore {
             (transaction.accountID == account.id || (transaction.accountID == nil && account.isDefault))
                 && (transaction.currencyCode ?? account.currencyCode) == account.currencyCode
         }
-        return account.openingBalance + relevant.income - relevant.expenses
+        let credits = relevant.filter { $0.type == .income }.reduce(0) { $0 + $1.amount }
+        let debits = relevant.filter { $0.type == .expense }.reduce(0) { $0 + $1.amount }
+        return account.openingBalance + credits - debits
+    }
+}
+
+enum AccountTransfer {
+    static func transactions(amount: Double, from: FinancialAccount, to: FinancialAccount, date: Date, notes: String) -> [Transaction]? {
+        guard amount > 0, amount.isFinite, from.id != to.id, from.currencyCode == to.currencyCode else { return nil }
+        let transferID = UUID()
+        let debit = Transaction(amount: amount, type: .expense, category: .other, paymentMethod: .bank, currencyCode: from.currencyCode, transactionDate: date, merchant: "Transfer to \(to.name)", notes: notes)
+        debit.accountID = from.id; debit.transferID = transferID
+        let credit = Transaction(amount: amount, type: .income, category: .otherIncome, paymentMethod: .bank, currencyCode: to.currencyCode, transactionDate: date, merchant: "Transfer from \(from.name)", notes: notes)
+        credit.accountID = to.id; credit.transferID = transferID
+        return [debit, credit]
     }
 }

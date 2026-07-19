@@ -20,7 +20,7 @@ struct DomainLogicTests {
         expect(DomainLogic.sanitizedText("123456", maximumLength: 4) == "1234", "text length cap")
         expect(DomainLogic.csvField("Cafe, \"Central\"") == "\"Cafe, \"\"Central\"\"\"", "CSV escaping")
         expect(DomainLogic.csv(rows: [["a", "b"], ["1", "2"]]) == "\"a\",\"b\"\n\"1\",\"2\"", "CSV rows")
-        expect(DomainLogic.transactionCSVHeaders == ["Amount", "Currency", "Type", "Category", "Payment Method", "Transaction Date", "Merchant", "Notes", "Category Symbol", "Category Color", "Date Added"], "user-facing CSV headers")
+        expect(DomainLogic.transactionCSVHeaders == ["Amount", "Currency", "Type", "Category", "Payment Method", "Transaction Date", "Merchant", "Notes", "Category Symbol", "Category Color", "Transfer ID", "Date Added"], "user-facing CSV headers")
         expect(!DomainLogic.transactionCSVHeaders.contains("id"), "CSV omits internal ID")
         expect(!DomainLogic.transactionCSVHeaders.contains("updatedAt"), "CSV omits update timestamp")
 

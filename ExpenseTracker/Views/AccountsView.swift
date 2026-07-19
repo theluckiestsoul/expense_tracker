@@ -7,6 +7,7 @@ struct AccountsView: View {
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @State private var editing: FinancialAccount?
     @State private var adding = false
+    @State private var transferring = false
     private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON) }
 
     var body: some View {
@@ -23,9 +24,15 @@ struct AccountsView: View {
             }
         }
         .navigationTitle("Accounts").navigationBarTitleDisplayMode(.inline)
-        .toolbar { Button { adding = true } label: { Image(systemName: "plus") }.accessibilityIdentifier("addAccount") }
+        .toolbar {
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                Button { transferring = true } label: { Image(systemName: "arrow.left.arrow.right") }.accessibilityIdentifier("transferMoney")
+                Button { adding = true } label: { Image(systemName: "plus") }.accessibilityIdentifier("addAccount")
+            }
+        }
         .sheet(isPresented: $adding) { AccountEditor(existing: nil, defaultCurrency: currencyCode, onSave: save) }
         .sheet(item: $editing) { AccountEditor(existing: $0, defaultCurrency: currencyCode, onSave: save) }
+        .sheet(isPresented: $transferring) { TransferView() }
     }
     private func save(_ account: FinancialAccount) {
         var updated = accounts

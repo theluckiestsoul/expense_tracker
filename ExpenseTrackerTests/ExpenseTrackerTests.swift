@@ -20,6 +20,7 @@ final class ExpenseTrackerTests: XCTestCase {
             "42.5", "EUR", "expense", "Food & Dining", "Card",
             transactionDate.ISO8601Format(), "Cafe, Central", "He said \"hello\"",
             "fork.knife", "indigo",
+            "",
             createdAt.ISO8601Format()
         ]
         let backup = DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders, row])
@@ -36,7 +37,7 @@ final class ExpenseTrackerTests: XCTestCase {
     func testCustomCategoryRoundTripsThroughCSV() throws {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
         let row = ["10.0", "USD", "expense", "Pets", "Cash", date.ISO8601Format(), "", "",
-                   "pawprint.fill", "orange", date.ISO8601Format()]
+                   "pawprint.fill", "orange", "", date.ISO8601Format()]
         let restored = try CSVBackup.importTransactions(from: DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders, row]))
 
         XCTAssertTrue(restored.first?.categoryRaw.hasPrefix("custom:import:") == true)
@@ -49,6 +50,20 @@ final class ExpenseTrackerTests: XCTestCase {
         let row = ["10.0", "USD", "income", "Salary", "Bank Transfer", date.ISO8601Format(), "Employer", "", date.ISO8601Format()]
         let restored = try CSVBackup.importTransactions(from: DomainLogic.csv(rows: [DomainLogic.legacyTransactionCSVHeaders, row]))
         XCTAssertEqual(restored.first?.categoryRaw, ExpenseCategory.salary.rawValue)
+    }
+
+    func testPreviousCSVBackupStillImportsAndTransferIDRoundTrips() throws {
+        let date = Date(timeIntervalSince1970: 1_700_000_000)
+        let previousRow = ["10.0", "USD", "expense", "Food & Dining", "Cash", date.ISO8601Format(), "Cafe", "",
+                           "fork.knife", "indigo", date.ISO8601Format()]
+        let previous = try CSVBackup.importTransactions(from: DomainLogic.csv(rows: [DomainLogic.previousTransactionCSVHeaders, previousRow]))
+        XCTAssertNil(previous.first?.transferID)
+
+        let transferID = UUID()
+        let currentRow = ["10.0", "USD", "expense", "Other Expense", "Bank Transfer", date.ISO8601Format(), "Transfer", "",
+                          "ellipsis.circle.fill", "gray", transferID.uuidString, date.ISO8601Format()]
+        let current = try CSVBackup.importTransactions(from: DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders, currentRow]))
+        XCTAssertEqual(current.first?.transferID, transferID)
     }
 
     func testCSVRestoreRejectsUnknownAndMalformedFiles() {
@@ -129,6 +144,21 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(FinancialAccountStore.balance(for: accounts[0], transactions: [income, expense, euroExpense]), 375)
         XCTAssertEqual(FinancialAccountStore.balance(for: other, transactions: [income, expense, euroExpense]), 40)
         XCTAssertEqual(FinancialAccountStore.decode(FinancialAccountStore.encode(accounts)), accounts)
+    }
+
+    func testTransfersMoveBalancesWithoutChangingIncomeOrExpenses() {
+        let cash = FinancialAccount(name: "Cash", type: .cash, currencyCode: "USD", openingBalance: 500)
+        let bank = FinancialAccount(name: "Bank", type: .bank, currencyCode: "USD", openingBalance: 1_000)
+        let euro = FinancialAccount(name: "Euro", type: .bank, currencyCode: "EUR")
+        let transfer = AccountTransfer.transactions(amount: 200, from: bank, to: cash, date: .now, notes: "ATM")!
+
+        XCTAssertEqual(transfer.count, 2)
+        XCTAssertEqual(transfer[0].transferID, transfer[1].transferID)
+        XCTAssertEqual(FinancialAccountStore.balance(for: bank, transactions: transfer), 800)
+        XCTAssertEqual(FinancialAccountStore.balance(for: cash, transactions: transfer), 700)
+        XCTAssertEqual(transfer.income, 0)
+        XCTAssertEqual(transfer.expenses, 0)
+        XCTAssertNil(AccountTransfer.transactions(amount: 10, from: bank, to: euro, date: .now, notes: ""))
     }
 
     func testMismatchedCategoryFallsBackSafely() {

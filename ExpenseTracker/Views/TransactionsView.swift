@@ -65,7 +65,7 @@ struct TransactionsView: View {
                     .onChange(of: filter) { _, _ in
                         if !categoryFilter.isEmpty && !categoryOptions.contains(where: { $0.id == categoryFilter }) { categoryFilter = "" }
                     }
-                ForEach(shown) { transaction in Button { editing = transaction } label: { TransactionRow(transaction: transaction) }.buttonStyle(.plain) }
+                ForEach(shown) { transaction in Button { if transaction.transferID == nil { editing = transaction } } label: { TransactionRow(transaction: transaction) }.buttonStyle(.plain) }
                     .onDelete { offsets in pendingDeletion = offsets.map { shown[$0] } }
             }.navigationTitle("Transactions").searchable(text: $search, prompt: "Merchant, notes, category, payment")
                 .toolbar {
@@ -108,7 +108,9 @@ struct TransactionsView: View {
         }
     }
     private func deletePending() {
-        pendingDeletion.forEach(context.delete)
+        let transferIDs = Set(pendingDeletion.compactMap(\.transferID))
+        let linked = all.filter { transaction in transaction.transferID.map(transferIDs.contains) ?? false }
+        Dictionary((pendingDeletion + linked).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first }).values.forEach(context.delete)
         do { try context.save(); pendingDeletion = [] } catch { context.rollback(); errorMessage = error.localizedDescription; pendingDeletion = [] }
     }
     private func clearFilters() { categoryFilter = ""; paymentFilter = ""; accountFilter = ""; dateFilter = .all }

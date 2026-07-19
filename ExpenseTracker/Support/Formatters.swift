@@ -25,7 +25,7 @@ enum CurrencyCatalog {
 }
 
 extension Array where Element == Transaction {
-    var expenses: Double { filter { $0.type == .expense }.reduce(0) { $0 + $1.amount } }
-    var income: Double { filter { $0.type == .income }.reduce(0) { $0 + $1.amount } }
+    var expenses: Double { filter { $0.type == .expense && $0.transferID == nil }.reduce(0) { $0 + $1.amount } }
+    var income: Double { filter { $0.type == .income && $0.transferID == nil }.reduce(0) { $0 + $1.amount } }
     func inCurrentMonth() -> [Transaction] { filter { Calendar.current.isDate($0.transactionDate, equalTo: .now, toGranularity: .month) } }
 }

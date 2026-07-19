@@ -19,7 +19,7 @@ struct DashboardView: View {
             .filter { $0.currencyCode == currencyCode }
             .map { item in
                 let category = CustomCategoryCatalog.presentation(for: item.categoryID, type: .expense, custom: custom)
-                let spent = month.filter { $0.type == .expense && $0.categoryRaw == item.categoryID }.reduce(0) { $0 + $1.amount }
+                let spent = month.filter { $0.type == .expense && $0.transferID == nil && $0.categoryRaw == item.categoryID }.reduce(0) { $0 + $1.amount }
                 return (item, category, spent)
             }
             .sorted { ($0.2 / $0.0.amount) > ($1.2 / $1.0.amount) }
@@ -37,7 +37,7 @@ struct DashboardView: View {
                         Text("Remaining  \(AppFormat.money(DomainLogic.budgetRemaining(spent: month.expenses, budget: budget), currencyCode: currencyCode))").fontWeight(.semibold).foregroundStyle(.white)
                     }.padding().background(LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 18))
 
-                    HStack { metric("Today’s spending", currencyTransactions.filter { Calendar.current.isDateInToday($0.transactionDate) && $0.type == .expense }.reduce(0) { $0 + $1.amount }); metric("This month income", month.income) }
+                    HStack { metric("Today’s spending", currencyTransactions.filter { Calendar.current.isDateInToday($0.transactionDate) && $0.type == .expense && $0.transferID == nil }.reduce(0) { $0 + $1.amount }); metric("This month income", month.income) }
 
                     if !accounts.isEmpty {
                         sectionHeader("Accounts")

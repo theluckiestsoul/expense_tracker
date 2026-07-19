@@ -12,7 +12,7 @@ struct ReportsView: View {
     @State private var period: ReportPeriod = .month
 
     private var periodTransactions: [Transaction] {
-        transactions.filter { ($0.currencyCode ?? currencyCode) == currencyCode && period.includes($0.transactionDate) }
+        transactions.filter { $0.transferID == nil && ($0.currencyCode ?? currencyCode) == currencyCode && period.includes($0.transactionDate) }
     }
     private var selectedTransactions: [Transaction] { periodTransactions.filter { $0.type == selectedType } }
     private var customCategories: [CustomCategory] { CustomCategoryCatalog.decode(customCategoriesJSON) }
