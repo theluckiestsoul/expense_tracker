@@ -26,6 +26,7 @@ struct SettingsView: View {
     @State private var confirmingDeleteAll = false
     @State private var statusMessage: String?
     @State private var statusTitle = "Something Went Wrong"
+    @FocusState private var isBudgetFieldFocused: Bool
     var body: some View {
         NavigationStack {
             Form {
@@ -36,7 +37,10 @@ struct SettingsView: View {
                             else { Text(language.name).tag(language.code) }
                         }
                     }
-                    TextField("Monthly Budget", value: $budget, format: .number).keyboardType(.decimalPad)
+                    TextField("Monthly Budget", value: $budget, format: .number)
+                        .keyboardType(.decimalPad)
+                        .focused($isBudgetFieldFocused)
+                        .accessibilityIdentifier("monthlyBudgetField")
                     Picker("Default Currency", selection: $selectedCurrency) {
                         ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) }
                     }.onChange(of: selectedCurrency) { oldValue, newValue in
@@ -67,6 +71,14 @@ struct SettingsView: View {
                     LabeledContent("Data Storage", value: AppLanguage.localized("On this device"))
                 }
             }.navigationTitle("Settings")
+                .scrollDismissesKeyboard(.interactively)
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Done") { isBudgetFieldFocused = false }
+                            .accessibilityIdentifier("dismissBudgetKeyboard")
+                    }
+                }
                 .onAppear { selectedCurrency = currencyCode }
                 .fileExporter(isPresented: $exporting, document: CSVDocument(text: csv), contentType: .commaSeparatedText, defaultFilename: "ledgerleaf-transactions.csv") { result in
                     if case .failure(let error) = result { showError(error) }

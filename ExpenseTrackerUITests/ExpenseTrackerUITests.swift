@@ -62,6 +62,20 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Monthly Rent"].waitForExistence(timeout: 5))
     }
 
+    func testMonthlyBudgetKeyboardCanBeDismissed() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+
+        app.tabBars.buttons["Settings"].tap()
+        let budget = app.textFields["monthlyBudgetField"]
+        XCTAssertTrue(budget.waitForExistence(timeout: 5))
+        budget.tap()
+        XCTAssertTrue(app.keyboards.element.waitForExistence(timeout: 3))
+        app.buttons["dismissBudgetKeyboard"].tap()
+        XCTAssertTrue(app.keyboards.element.waitForNonExistence(timeout: 3))
+    }
+
     func testPersianLocalization() {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(fa)", "-AppleLocale", "fa_IR"]
