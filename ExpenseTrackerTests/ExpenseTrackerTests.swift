@@ -3,6 +3,29 @@ import SwiftData
 @testable import ExpenseTracker
 
 final class ExpenseTrackerTests: XCTestCase {
+    func testCompleteBackupRoundTripsAndRejectsInvalidData() throws {
+        let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let transaction = Transaction(amount: 25, type: .expense, category: .food, paymentMethod: .card,
+                                      currencyCode: "USD", transactionDate: fixedDate, merchant: "Cafe")
+        transaction.createdAt = fixedDate; transaction.updatedAt = fixedDate
+        let backup = LedgerLeafBackup(formatVersion: 1, exportedAt: fixedDate,
+            preferences: .init(currencyCode: "USD", monthlyBudget: 2_000, languageCode: "en"),
+            transactions: [.init(transaction, fallbackCurrency: "USD")], customCategories: [],
+            accounts: [FinancialAccount(name: "Cash", type: .cash, currencyCode: "USD")],
+            categoryBudgets: [], savingsGoals: [], recurringTransactions: [])
+        XCTAssertEqual(try LedgerLeafBackup.decoded(from: backup.encoded()), backup)
+
+        var invalid = backup
+        invalid.transactions.append(invalid.transactions[0])
+        XCTAssertThrowsError(try LedgerLeafBackup.decoded(from: invalid.encoded())) {
+            XCTAssertEqual($0 as? LedgerLeafBackup.BackupError, .invalidData)
+        }
+        invalid = backup; invalid.formatVersion = 99
+        XCTAssertThrowsError(try LedgerLeafBackup.decoded(from: invalid.encoded())) {
+            XCTAssertEqual($0 as? LedgerLeafBackup.BackupError, .unsupportedVersion)
+        }
+    }
+
     func testTransactionDuplicationCopiesDetailsButNotIdentityOrTransferState() {
         let original = Transaction(amount: 18.5, type: .expense, category: .food, paymentMethod: .card,
                                    currencyCode: "EUR", transactionDate: .distantPast, merchant: "Cafe", notes: "Lunch")

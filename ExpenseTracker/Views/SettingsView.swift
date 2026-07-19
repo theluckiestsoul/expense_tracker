@@ -2,6 +2,18 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 
+extension UTType {
+    static let ledgerLeafBackup = UTType(exportedAs: "com.theluckiestsoul.ledgerleaf.backup", conformingTo: .json)
+}
+
+struct BackupDocument: FileDocument {
+    static var readableContentTypes: [UTType] { [.ledgerLeafBackup, .json] }
+    var data: Data
+    init(data: Data) { self.data = data }
+    init(configuration: ReadConfiguration) throws { data = configuration.file.regularFileContents ?? Data() }
+    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: data) }
+}
+
 struct CSVDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.commaSeparatedText] }
     var text: String
@@ -20,8 +32,14 @@ struct SettingsView: View {
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @AppStorage(RecurringTransactionStore.storageKey) private var recurringTransactionsJSON = ""
     @AppStorage(BillReminderService.enabledKey) private var billRemindersEnabled = false
+    @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
+    @AppStorage(CategoryBudgetStore.storageKey) private var categoryBudgetsJSON = ""
+    @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
     @State private var exporting = false
     @State private var importing = false
+    @State private var exportingBackup = false
+    @State private var importingBackup = false
+    @State private var pendingBackup: LedgerLeafBackup?
     @State private var selectedCurrency = CurrencyCatalog.defaultCode
     @State private var proposedCurrency: String?
     @State private var confirmingCurrency = false
@@ -71,6 +89,10 @@ struct SettingsView: View {
                         .accessibilityIdentifier("recurringTransactionsLink")
                 }
                 Section("Data & Backup") {
+                    Button("Export Complete Backup") { exportingBackup = true }
+                        .accessibilityIdentifier("exportCompleteBackup")
+                    Button("Restore Complete Backup") { importingBackup = true }
+                        .accessibilityIdentifier("restoreCompleteBackup")
                     Button("Export Data (CSV)") { exporting = true }.disabled(transactions.isEmpty)
                     Button("Import Data (CSV)") { importing = true }
                     Button("Delete All Transactions", role: .destructive) { confirmingDeleteAll = true }.disabled(transactions.isEmpty)
@@ -100,6 +122,13 @@ struct SettingsView: View {
                     do { try importCSV(from: result.get()) }
                     catch { showError(error) }
                 }
+                .fileExporter(isPresented: $exportingBackup, document: BackupDocument(data: (try? completeBackup.encoded()) ?? Data()), contentType: .ledgerLeafBackup, defaultFilename: "ledgerleaf-complete-backup") { result in
+                    if case .failure(let error) = result { showError(error) }
+                }
+                .fileImporter(isPresented: $importingBackup, allowedContentTypes: [.ledgerLeafBackup, .json]) { result in
+                    do { pendingBackup = try readBackup(from: result.get()) }
+                    catch { showError(error) }
+                }
                 .confirmationDialog("Change default currency?", isPresented: $confirmingCurrency, titleVisibility: .visible) {
                     Button("Use \(proposedCurrency ?? currencyCode)") { if let proposedCurrency { currencyCode = proposedCurrency; selectedCurrency = proposedCurrency }; self.proposedCurrency = nil }
                     Button("Cancel", role: .cancel) { proposedCurrency = nil; selectedCurrency = currencyCode }
@@ -107,6 +136,10 @@ struct SettingsView: View {
                 .confirmationDialog("Delete all transactions?", isPresented: $confirmingDeleteAll, titleVisibility: .visible) {
                     Button("Delete All", role: .destructive, action: deleteAll); Button("Cancel", role: .cancel) {}
                 } message: { Text("This permanently deletes \(transactions.count) transaction\(transactions.count == 1 ? "" : "s"). Export a backup first if needed.") }
+                .confirmationDialog("Replace all LedgerLeaf data?", isPresented: Binding(get: { pendingBackup != nil }, set: { if !$0 { pendingBackup = nil } }), titleVisibility: .visible) {
+                    Button("Restore Backup", role: .destructive) { restorePendingBackup() }
+                    Button("Cancel", role: .cancel) { pendingBackup = nil }
+                } message: { Text("This replaces transactions, wallets, budgets, goals, schedules, and preferences on this device. This action can’t be undone.") }
                 .alert(statusTitle, isPresented: Binding(get: { statusMessage != nil }, set: { if !$0 { statusMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(statusMessage ?? "Unknown error") }
         }
     }
@@ -126,6 +159,18 @@ struct SettingsView: View {
             }
         return DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders] + rows)
     }
+    private var completeBackup: LedgerLeafBackup {
+        LedgerLeafBackup(
+            formatVersion: 1, exportedAt: .now,
+            preferences: .init(currencyCode: currencyCode, monthlyBudget: budget, languageCode: languageCode),
+            transactions: transactions.map { .init($0, fallbackCurrency: currencyCode) },
+            customCategories: CustomCategoryCatalog.decode(customCategoriesJSON),
+            accounts: FinancialAccountStore.decode(accountsJSON),
+            categoryBudgets: CategoryBudgetStore.decode(categoryBudgetsJSON),
+            savingsGoals: SavingsGoalStore.decode(savingsGoalsJSON),
+            recurringTransactions: RecurringTransactionStore.decode(recurringTransactionsJSON)
+        )
+    }
     private var version: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
@@ -134,6 +179,43 @@ struct SettingsView: View {
     private func deleteAll() {
         transactions.forEach(context.delete)
         do { try context.save() } catch { context.rollback(); showError(error) }
+    }
+
+    private func readBackup(from url: URL) throws -> LedgerLeafBackup {
+        let accessing = url.startAccessingSecurityScopedResource()
+        defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        return try LedgerLeafBackup.decoded(from: Data(contentsOf: url))
+    }
+
+    private func restorePendingBackup() {
+        guard let backup = pendingBackup else { return }
+        let existing = Dictionary(transactions.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let restoredIDs = Set(backup.transactions.map(\.id))
+        transactions.filter { !restoredIDs.contains($0.id) }.forEach(context.delete)
+        for record in backup.transactions {
+            let transaction = existing[record.id] ?? Transaction(amount: record.amount, type: record.type, category: ExpenseCategory.cases(for: record.type)[0], paymentMethod: record.paymentMethod, currencyCode: record.currencyCode, transactionDate: record.transactionDate, merchant: record.merchant, notes: record.notes)
+            transaction.id = record.id; transaction.amount = record.amount; transaction.type = record.type
+            transaction.categoryRaw = record.categoryRaw; transaction.paymentMethod = record.paymentMethod
+            transaction.currencyCode = record.currencyCode; transaction.transactionDate = record.transactionDate
+            transaction.merchant = record.merchant; transaction.notes = record.notes
+            transaction.createdAt = record.createdAt; transaction.updatedAt = record.updatedAt
+            transaction.recurringSourceID = record.recurringSourceID; transaction.accountID = record.accountID
+            transaction.transferID = record.transferID
+            if existing[record.id] == nil { context.insert(transaction) }
+        }
+        do {
+            try context.save()
+            currencyCode = backup.preferences.currencyCode; selectedCurrency = currencyCode
+            budget = backup.preferences.monthlyBudget; languageCode = backup.preferences.languageCode
+            customCategoriesJSON = CustomCategoryCatalog.encode(backup.customCategories)
+            accountsJSON = FinancialAccountStore.encode(backup.accounts)
+            categoryBudgetsJSON = CategoryBudgetStore.encode(backup.categoryBudgets)
+            savingsGoalsJSON = SavingsGoalStore.encode(backup.savingsGoals)
+            recurringTransactionsJSON = RecurringTransactionStore.encode(backup.recurringTransactions)
+            billRemindersEnabled = false
+            pendingBackup = nil; statusTitle = "Restore Complete"
+            statusMessage = "Restored \(backup.transactions.count) transactions and all included LedgerLeaf settings. Re-enable reminders if you want notifications on this device."
+        } catch { context.rollback(); pendingBackup = nil; showError(error) }
     }
 
     private func importCSV(from url: URL) throws {

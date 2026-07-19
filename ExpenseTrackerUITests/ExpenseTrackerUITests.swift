@@ -83,6 +83,8 @@ final class ExpenseTrackerUITests: XCTestCase {
 
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.switches["billRemindersToggle"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["exportCompleteBackup"].exists)
+        XCTAssertTrue(app.buttons["restoreCompleteBackup"].exists)
     }
 
     func testCreateFinancialAccount() {

@@ -41,3 +41,5 @@ The interface automatically follows the user's supported iOS language. Current l
 - `make doctor` reports whether the required Apple tools are installed.
 
 Transactions retain their original ISO currency, while dashboard and report totals use the selected default currency. Data and preferences stay on device with SwiftData/AppStorage. CSV export uses the system share sheet. The app does not track users or transmit personal data.
+
+Complete LedgerLeaf backups preserve transactions, linked transfers, wallets, custom categories, budgets, savings goals, recurring schedules, and core preferences in one versioned JSON file. Restore validates the full file and asks before replacing local data; biometric and notification permissions remain specific to each device.
