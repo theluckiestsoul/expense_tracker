@@ -8,6 +8,7 @@ struct RootView: View {
     @AppStorage(BillReminderService.enabledKey) private var billRemindersEnabled = false
     @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     @AppStorage(AppTheme.storageKey) private var themeRaw = AppTheme.system.rawValue
+    @AppStorage(OnboardingView.completionKey) private var hasCompletedOnboarding = false
     @State private var selection = 0
     @State private var adding = false
 
@@ -20,6 +21,12 @@ struct RootView: View {
             SettingsView().tabItem { Label("Settings", systemImage: "slider.horizontal.3") }.tag(4)
         }
         .tint(theme.accent)
+        .fullScreenCover(isPresented: Binding(
+            get: { !hasCompletedOnboarding },
+            set: { if !$0 { hasCompletedOnboarding = true } }
+        )) {
+            OnboardingView { hasCompletedOnboarding = true }
+        }
         .onChange(of: selection) { _, value in if value == 2 { adding = true; selection = 0 } }
         .sheet(isPresented: $adding) { AddTransactionView() }
         .task {

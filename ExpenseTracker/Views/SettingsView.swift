@@ -38,6 +38,7 @@ struct SettingsView: View {
     @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     @AppStorage(CategoryBudgetStore.storageKey) private var categoryBudgetsJSON = ""
     @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
+    @AppStorage(OnboardingView.completionKey) private var hasCompletedOnboarding = false
     @State private var exporting = false
     @State private var csvExportKind: CSVExportKind = .transactions
     @State private var importing = false
@@ -114,6 +115,8 @@ struct SettingsView: View {
                     Button("Delete All Transactions", role: .destructive) { confirmingDeleteAll = true }.disabled(transactions.isEmpty)
                 }
                 Section("Help & Legal") {
+                    Button("View Getting Started Guide") { hasCompletedOnboarding = false }
+                        .accessibilityIdentifier("showOnboarding")
                     Link("Support", destination: URL(string: "https://github.com/theluckiestsoul/expense_tracker/issues")!)
                     Link("Privacy Policy", destination: URL(string: "https://github.com/theluckiestsoul/expense_tracker/blob/main/PRIVACY.md")!)
                 }

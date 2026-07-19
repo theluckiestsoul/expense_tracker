@@ -3,8 +3,31 @@ import XCTest
 final class ExpenseTrackerUITests: XCTestCase {
     override func setUpWithError() throws { continueAfterFailure = false }
 
-    func testPrimaryNavigationAndAddForm() {
+    private func configuredApp() -> XCUIApplication {
         let app = XCUIApplication()
+        app.launchArguments += ["-hasCompletedOnboarding", "YES"]
+        return app
+    }
+
+    func testFirstLaunchOnboardingSupportsNextPreviousAndFinish() {
+        let app = XCUIApplication()
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-hasCompletedOnboarding", "NO"]
+        app.launch()
+
+        XCTAssertTrue(app.otherElements["onboardingPage_0"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["onboardingPrevious"].isEnabled)
+        app.buttons["onboardingNext"].tap()
+        XCTAssertTrue(app.otherElements["onboardingPage_1"].waitForExistence(timeout: 5))
+        app.buttons["onboardingPrevious"].tap()
+        XCTAssertTrue(app.otherElements["onboardingPage_0"].waitForExistence(timeout: 5))
+        for _ in 0..<5 { app.buttons["onboardingNext"].tap() }
+        XCTAssertTrue(app.buttons["finishOnboarding"].waitForExistence(timeout: 5))
+        app.buttons["finishOnboarding"].tap()
+        XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 10))
+    }
+
+    func testPrimaryNavigationAndAddForm() {
+        let app = configuredApp()
         app.launch()
         XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.tabBars.buttons["Transactions"].exists)
@@ -20,7 +43,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testDeviceLanguageSelectsSupportedLocalization() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(es)", "-AppleLocale", "es_ES"]
         app.launch()
 
@@ -31,7 +54,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testCreateCustomExpenseCategory() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-customCategoriesJSON", "[]"]
         app.launch()
 
@@ -47,7 +70,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testCreateRecurringTransaction() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-recurringTransactionsJSON", "[]"]
         app.launch()
 
@@ -64,7 +87,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testMonthlyBudgetKeyboardCanBeDismissed() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
 
@@ -78,7 +101,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testBillReminderSettingIsAvailable() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
 
@@ -93,7 +116,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testCreateFinancialAccount() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-financialAccountsJSON", "[]"]
         app.launch()
 
@@ -109,7 +132,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testCreateSavingsGoal() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-savingsGoalsJSON", "[]"]
         app.launch()
 
@@ -126,7 +149,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testCreateCategoryBudgetAndOpenTransactionFilters() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-categoryBudgetsJSON", "[]"]
         app.launch()
 
@@ -149,7 +172,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testReportPeriodAndCashFlowEmptyState() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         app.launch()
 
@@ -161,7 +184,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testPersianLocalization() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(fa)", "-AppleLocale", "fa_IR"]
         app.launch()
 
@@ -172,7 +195,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testBengaliLocalization() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(bn)", "-AppleLocale", "bn_IN"]
         app.launch()
 
@@ -183,7 +206,7 @@ final class ExpenseTrackerUITests: XCTestCase {
     }
 
     func testOdiaLocalization() {
-        let app = XCUIApplication()
+        let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(or)", "-AppleLocale", "or_IN"]
         app.launch()
 
