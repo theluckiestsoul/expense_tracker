@@ -113,8 +113,10 @@ private struct RecurringTransactionEditor: View {
                     Text(currency).foregroundStyle(.secondary)
                     TextField("0.00", text: $amount).keyboardType(.decimalPad).accessibilityIdentifier("recurringAmount")
                 }
-                Picker("Account", selection: $accountID) { ForEach(accounts) { Text("\($0.name) (\($0.currencyCode))").tag($0.id) } }
-                    .onChange(of: accountID) { _, value in if let account = accounts.first(where: { $0.id == value }) { currency = account.currencyCode } }
+                if accounts.count > 1 {
+                    Picker("Wallet or Account", selection: $accountID) { ForEach(accounts) { Text("\($0.name) (\($0.currencyCode))").tag($0.id) } }
+                        .onChange(of: accountID) { _, value in if let account = accounts.first(where: { $0.id == value }) { currency = account.currencyCode } }
+                }
                 Picker("Category", selection: $categoryRaw) { ForEach(categoryOptions) { Label($0.name, systemImage: $0.symbol).tag($0.id) } }
                 Picker("Payment Method", selection: $payment) { ForEach(PaymentMethod.allCases) { Text($0.displayName).tag($0) } }
                 Picker("Currency", selection: $currency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }

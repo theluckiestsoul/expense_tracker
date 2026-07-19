@@ -47,10 +47,12 @@ struct AddTransactionView: View {
                     }
                 }
                 Section {
-                    Picker("Account", selection: $accountID) {
-                        ForEach(accounts) { account in Text("\(account.name) (\(account.currencyCode))").tag(account.id) }
-                    }.onChange(of: accountID) { _, value in
-                        if let account = accounts.first(where: { $0.id == value }) { transactionCurrency = account.currencyCode }
+                    if accounts.count > 1 {
+                        Picker("Wallet or Account", selection: $accountID) {
+                            ForEach(accounts) { account in Text("\(account.name) (\(account.currencyCode))").tag(account.id) }
+                        }.onChange(of: accountID) { _, value in
+                            if let account = accounts.first(where: { $0.id == value }) { transactionCurrency = account.currencyCode }
+                        }
                     }
                     Picker("Category", selection: $categoryID) {
                         ForEach(categoryOptions(for: type)) { category in

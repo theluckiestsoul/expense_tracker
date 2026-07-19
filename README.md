@@ -12,7 +12,7 @@ Reports support weekly, monthly, yearly, and all-time views with income-versus-e
 
 Optional bill reminders schedule private, on-device notifications one day before active recurring expenses. Notification access is requested only when the user enables Bill Reminders in Settings.
 
-Multiple local accounts support cash, bank, credit-card, and wallet balances with independent currencies and opening balances. Transactions and recurring schedules can be assigned to an account, account balances appear on the dashboard, and the transaction list can be filtered by account.
+Optional Wallets & Accounts represent where money is kept or owed, such as cash, a bank account, a credit card, or a digital wallet. LedgerLeaf handles the single default wallet automatically and shows account selection only after another one is created. Balances can use independent currencies, appear on the dashboard, and support transaction filtering.
 
 Same-currency account transfers update both balances using a linked debit and credit. Transfers are excluded from spending, income, budgets, savings rate, and reports, and deleting either side removes the complete transfer.
 

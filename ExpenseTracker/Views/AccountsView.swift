@@ -9,24 +9,36 @@ struct AccountsView: View {
     @State private var adding = false
     @State private var transferring = false
     private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON) }
+    private var activeAccounts: [FinancialAccount] { accounts.filter { !$0.isArchived } }
+    private var canTransfer: Bool {
+        activeAccounts.contains { source in activeAccounts.contains { $0.id != source.id && $0.currencyCode == source.currencyCode } }
+    }
 
     var body: some View {
         List {
-            ForEach(accounts.filter { !$0.isArchived }) { account in
-                Button { editing = account } label: {
-                    HStack {
-                        Image(systemName: account.type.symbol).frame(width: 34).foregroundStyle(.indigo)
-                        VStack(alignment: .leading) { Text(account.name).foregroundStyle(.primary); Text(account.type.title).font(.caption).foregroundStyle(.secondary) }
-                        Spacer()
-                        Text(AppFormat.money(FinancialAccountStore.balance(for: account, transactions: transactions), currencyCode: account.currencyCode)).fontWeight(.semibold)
-                    }
-                }.accessibilityIdentifier("account_\(account.id)")
+            Section {
+                ForEach(activeAccounts) { account in
+                    Button { editing = account } label: {
+                        HStack {
+                            Image(systemName: account.type.symbol).frame(width: 34).foregroundStyle(.indigo)
+                            VStack(alignment: .leading) { Text(account.name).foregroundStyle(.primary); Text(account.type.title).font(.caption).foregroundStyle(.secondary) }
+                            Spacer()
+                            Text(AppFormat.money(FinancialAccountStore.balance(for: account, transactions: transactions), currencyCode: account.currencyCode)).fontWeight(.semibold)
+                        }
+                    }.accessibilityIdentifier("account_\(account.id)")
+                }
+            } header: {
+                Text("Where your money is kept")
+            } footer: {
+                Text("Examples include cash, a bank account, a credit card, or a digital wallet. If you use only one, LedgerLeaf handles it automatically.")
             }
         }
-        .navigationTitle("Accounts").navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("Wallets & Accounts").navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button { transferring = true } label: { Image(systemName: "arrow.left.arrow.right") }.accessibilityIdentifier("transferMoney")
+                if canTransfer {
+                    Button { transferring = true } label: { Image(systemName: "arrow.left.arrow.right") }.accessibilityIdentifier("transferMoney")
+                }
                 Button { adding = true } label: { Image(systemName: "plus") }.accessibilityIdentifier("addAccount")
             }
         }
@@ -59,11 +71,15 @@ private struct AccountEditor: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Account Name", text: $name).accessibilityIdentifier("accountName")
-                Picker("Account Type", selection: $type) { ForEach(FinancialAccountType.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) } }
-                Picker("Currency", selection: $currency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }
-                TextField("Opening Balance", text: $openingBalance).keyboardType(.numbersAndPunctuation)
-            }.navigationTitle(existing == nil ? "New Account" : "Edit Account").navigationBarTitleDisplayMode(.inline)
+                Section {
+                    TextField("Wallet or Account Name", text: $name).accessibilityIdentifier("accountName")
+                    Picker("Type", selection: $type) { ForEach(FinancialAccountType.allCases) { Label($0.title, systemImage: $0.symbol).tag($0) } }
+                    Picker("Currency", selection: $currency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }
+                    TextField("Current Balance When Added", text: $openingBalance).keyboardType(.numbersAndPunctuation)
+                } footer: {
+                    Text("For example: Cash Wallet, Main Bank, Travel Card, or Paytm. The starting balance is used only as the baseline for future transactions.")
+                }
+            }.navigationTitle(existing == nil ? "Add Wallet or Account" : "Edit Wallet or Account").navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                     ToolbarItem(placement: .confirmationAction) { Button("Save") { save() }.disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty).accessibilityIdentifier("saveAccount") }
