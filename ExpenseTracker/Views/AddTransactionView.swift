@@ -8,6 +8,7 @@ struct AddTransactionView: View {
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     private let transaction: Transaction?
+    private let isDuplicate: Bool
     @State private var type: TransactionType
     @State private var amount: String
     @State private var categoryID: String
@@ -21,6 +22,7 @@ struct AddTransactionView: View {
 
     init(transaction: Transaction? = nil) {
         self.transaction = transaction
+        self.isDuplicate = false
         _type = State(initialValue: transaction?.type ?? .expense)
         _amount = State(initialValue: transaction.map { String(format: "%.2f", $0.amount) } ?? "")
         _categoryID = State(initialValue: transaction?.categoryRaw ?? ExpenseCategory.food.rawValue)
@@ -30,6 +32,20 @@ struct AddTransactionView: View {
         _merchant = State(initialValue: transaction?.merchant ?? "")
         _notes = State(initialValue: transaction?.notes ?? "")
         _accountID = State(initialValue: transaction?.accountID ?? "")
+    }
+
+    init(copying source: Transaction) {
+        self.transaction = nil
+        self.isDuplicate = true
+        _type = State(initialValue: source.type)
+        _amount = State(initialValue: String(format: "%.2f", source.amount))
+        _categoryID = State(initialValue: source.categoryRaw)
+        _payment = State(initialValue: source.paymentMethod)
+        _transactionCurrency = State(initialValue: source.currencyCode ?? CurrencyCatalog.defaultCode)
+        _date = State(initialValue: .now)
+        _merchant = State(initialValue: source.merchant)
+        _notes = State(initialValue: source.notes)
+        _accountID = State(initialValue: source.accountID ?? "")
     }
 
     private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON).filter { !$0.isArchived } }
@@ -65,7 +81,7 @@ struct AddTransactionView: View {
                     TextField("Merchant / description", text: $merchant).textInputAutocapitalization(.words)
                     TextField("Notes (optional)", text: $notes, axis: .vertical).lineLimit(2...5)
                 }
-            }.navigationTitle(transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction")).navigationBarTitleDisplayMode(.inline)
+            }.navigationTitle(isDuplicate ? "Duplicate Transaction" : (transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction"))).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveTransactionButton") } }
                 .alert("Couldn’t Save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
                 .onAppear {
@@ -95,6 +111,6 @@ struct AddTransactionView: View {
     }
 
     private func categoryOptions(for type: TransactionType) -> [CategoryPresentation] {
-        CustomCategoryCatalog.options(for: type, custom: CustomCategoryCatalog.decode(customCategoriesJSON), includeArchivedID: transaction?.categoryRaw)
+        CustomCategoryCatalog.options(for: type, custom: CustomCategoryCatalog.decode(customCategoriesJSON), includeArchivedID: categoryID)
     }
 }

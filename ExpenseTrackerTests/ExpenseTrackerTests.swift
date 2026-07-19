@@ -3,6 +3,25 @@ import SwiftData
 @testable import ExpenseTracker
 
 final class ExpenseTrackerTests: XCTestCase {
+    func testTransactionDuplicationCopiesDetailsButNotIdentityOrTransferState() {
+        let original = Transaction(amount: 18.5, type: .expense, category: .food, paymentMethod: .card,
+                                   currencyCode: "EUR", transactionDate: .distantPast, merchant: "Cafe", notes: "Lunch")
+        original.accountID = "wallet"
+        let copyDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let copy = original.duplicated(date: copyDate)
+
+        XCTAssertNotNil(copy)
+        XCTAssertNotEqual(copy?.id, original.id)
+        XCTAssertEqual(copy?.amount, original.amount)
+        XCTAssertEqual(copy?.categoryRaw, original.categoryRaw)
+        XCTAssertEqual(copy?.accountID, original.accountID)
+        XCTAssertEqual(copy?.transactionDate, copyDate)
+        XCTAssertNil(copy?.transferID)
+
+        original.transferID = UUID()
+        XCTAssertNil(original.duplicated())
+    }
+
     func testSavingsGoalsRoundTripAndCalculateProgress() {
         let goal = SavingsGoal(id: UUID(), name: "Emergency Fund", targetAmount: 10_000, savedAmount: 2_500, currencyCode: "USD", targetDate: nil)
         let restored = SavingsGoalStore.decode(SavingsGoalStore.encode([goal]))

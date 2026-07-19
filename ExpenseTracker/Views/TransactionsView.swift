@@ -32,6 +32,7 @@ struct TransactionsView: View {
     @State private var dateFilter = TransactionDateFilter.all
     @State private var showingFilters = false
     @State private var editing: Transaction?
+    @State private var duplicating: Transaction?
     @State private var pendingDeletion: [Transaction] = []
     @State private var errorMessage: String?
     private var customCategories: [CustomCategory] { CustomCategoryCatalog.decode(customCategoriesJSON) }
@@ -65,7 +66,20 @@ struct TransactionsView: View {
                     .onChange(of: filter) { _, _ in
                         if !categoryFilter.isEmpty && !categoryOptions.contains(where: { $0.id == categoryFilter }) { categoryFilter = "" }
                     }
-                ForEach(shown) { transaction in Button { if transaction.transferID == nil { editing = transaction } } label: { TransactionRow(transaction: transaction) }.buttonStyle(.plain) }
+                ForEach(shown) { transaction in
+                    Button { if transaction.transferID == nil { editing = transaction } } label: { TransactionRow(transaction: transaction) }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            if transaction.transferID == nil {
+                                Button { duplicating = transaction } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
+                                    .tint(.indigo)
+                                    .accessibilityIdentifier("duplicateTransaction_\(transaction.id.uuidString)")
+                            }
+                        }
+                        .contextMenu {
+                            if transaction.transferID == nil { Button { duplicating = transaction } label: { Label("Duplicate", systemImage: "plus.square.on.square") } }
+                        }
+                }
                     .onDelete { offsets in pendingDeletion = offsets.map { shown[$0] } }
             }.navigationTitle("Transactions").searchable(text: $search, prompt: "Merchant, notes, category, payment")
                 .toolbar {
@@ -78,6 +92,7 @@ struct TransactionsView: View {
                 }
                 .overlay { if shown.isEmpty { ContentUnavailableView.search(text: search) } }
                 .sheet(item: $editing) { AddTransactionView(transaction: $0) }
+                .sheet(item: $duplicating) { AddTransactionView(copying: $0) }
                 .sheet(isPresented: $showingFilters) {
                     NavigationStack {
                         Form {

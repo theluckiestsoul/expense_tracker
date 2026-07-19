@@ -111,6 +111,18 @@ final class Transaction {
     }
 }
 
+extension Transaction {
+    func duplicated(date: Date = .now) -> Transaction? {
+        guard transferID == nil else { return nil }
+        let copy = Transaction(amount: amount, type: type, category: ExpenseCategory.cases(for: type)[0],
+                               paymentMethod: paymentMethod, currencyCode: currencyCode ?? CurrencyCatalog.defaultCode,
+                               transactionDate: date, merchant: merchant, notes: notes)
+        copy.categoryRaw = categoryRaw
+        copy.accountID = accountID
+        return copy
+    }
+}
+
 enum LegacyDataMigrator {
     @MainActor
     static func assignMissingCurrencies(in context: ModelContext, currencyCode: String) throws {
