@@ -52,6 +52,20 @@ enum RecurringTransactionStore {
     }
 }
 
+enum UpcomingBillPlanner {
+    static func bills(from schedules: [RecurringTransaction], currencyCode: String, selectedAccountID: String? = nil,
+                      defaultAccountID: String? = nil, now: Date = .now, calendar: Calendar = .current,
+                      daysAhead: Int = 30) -> [RecurringTransaction] {
+        guard let end = calendar.date(byAdding: .day, value: daysAhead, to: now) else { return [] }
+        return schedules.filter { schedule in
+            guard schedule.isActive, schedule.type == .expense, schedule.currencyCode == currencyCode,
+                  schedule.nextDate < end else { return false }
+            guard let selectedAccountID else { return true }
+            return schedule.accountID == selectedAccountID || (schedule.accountID == nil && defaultAccountID == selectedAccountID)
+        }.sorted { $0.nextDate < $1.nextDate }
+    }
+}
+
 enum RecurringTransactionProcessor {
     @MainActor
     static func processDue(in context: ModelContext, schedulesJSON: String, now: Date = .now, calendar: Calendar = .current) throws -> String {

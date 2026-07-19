@@ -228,6 +228,27 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(calendar.component(.hour, from: plans[0].fireDate), 9)
     }
 
+    func testUpcomingBillsAreFilteredSortedAndWalletAware() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 7, day: 10, hour: 12))!
+        let soon = calendar.date(byAdding: .day, value: 2, to: now)!
+        let later = calendar.date(byAdding: .day, value: 20, to: now)!
+        let tooLate = calendar.date(byAdding: .day, value: 31, to: now)!
+        func schedule(_ name: String, date: Date, type: TransactionType = .expense, currency: String = "USD", active: Bool = true, accountID: String? = nil) -> RecurringTransaction {
+            RecurringTransaction(name: name, amount: 10, type: type, categoryRaw: ExpenseCategory.cases(for: type)[0].rawValue,
+                                 paymentMethod: .card, currencyCode: currency, merchant: "", notes: "",
+                                 frequency: .monthly, nextDate: date, isActive: active, accountID: accountID)
+        }
+        let schedules = [schedule("Later", date: later), schedule("Soon", date: soon), schedule("Income", date: soon, type: .income),
+                         schedule("Paused", date: soon, active: false), schedule("Euro", date: soon, currency: "EUR"),
+                         schedule("Future", date: tooLate), schedule("Savings", date: soon, accountID: "savings")]
+
+        XCTAssertEqual(UpcomingBillPlanner.bills(from: schedules, currencyCode: "USD", now: now, calendar: calendar).map(\.name), ["Soon", "Savings", "Later"])
+        XCTAssertEqual(UpcomingBillPlanner.bills(from: schedules, currencyCode: "USD", selectedAccountID: "default", defaultAccountID: "default", now: now, calendar: calendar).map(\.name), ["Soon", "Later"])
+        XCTAssertEqual(UpcomingBillPlanner.bills(from: schedules, currencyCode: "USD", selectedAccountID: "savings", defaultAccountID: "default", now: now, calendar: calendar).map(\.name), ["Savings"])
+    }
+
     func testAccountMigrationAndBalances() {
         let accounts = FinancialAccountStore.ensuringDefault(in: [], currencyCode: "USD")
         XCTAssertEqual(accounts.count, 1)

@@ -10,6 +10,7 @@ struct DashboardView: View {
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
+    @AppStorage(RecurringTransactionStore.storageKey) private var recurringTransactionsJSON = ""
     @AppStorage(AppTheme.storageKey) private var themeRaw = AppTheme.system.rawValue
     @State private var addingType: TransactionType?
     @State private var transferring = false
@@ -26,6 +27,13 @@ struct DashboardView: View {
         }
     }
     private var month: [Transaction] { currencyTransactions.inCurrentMonth() }
+    private var upcomingBills: [RecurringTransaction] {
+        UpcomingBillPlanner.bills(
+            from: RecurringTransactionStore.decode(recurringTransactionsJSON), currencyCode: currencyCode,
+            selectedAccountID: selectedAccountID.isEmpty ? nil : selectedAccountID,
+            defaultAccountID: accounts.first(where: \.isDefault)?.id
+        )
+    }
     private var savingsGoals: [SavingsGoal] { SavingsGoalStore.decode(savingsGoalsJSON).filter { $0.currencyCode == currencyCode }.sorted { $0.progress > $1.progress } }
     private var ratio: Double { DomainLogic.budgetProgress(spent: month.expenses, budget: budget) }
     private var canTransfer: Bool { accounts.contains { source in accounts.contains { $0.id != source.id && $0.currencyCode == source.currencyCode } } }
@@ -74,6 +82,33 @@ struct DashboardView: View {
                     }
 
                     HStack { metric("Today’s spending", currencyTransactions.filter { Calendar.current.isDateInToday($0.transactionDate) && $0.type == .expense && $0.transferID == nil }.reduce(0) { $0 + $1.amount }); metric("Net this month", month.income - month.expenses) }
+
+                    if !upcomingBills.isEmpty {
+                        HStack {
+                            sectionHeader("Upcoming Bills")
+                            NavigationLink("See All") { RecurringTransactionsView() }.font(.subheadline)
+                        }
+                        VStack(spacing: 0) {
+                            ForEach(Array(upcomingBills.prefix(3).enumerated()), id: \.element.id) { index, bill in
+                                HStack(spacing: 12) {
+                                    Image(systemName: "calendar.badge.clock").foregroundStyle(theme.accent)
+                                        .frame(width: 32, height: 32).background(theme.accent.opacity(0.12), in: Circle())
+                                    VStack(alignment: .leading, spacing: 3) {
+                                        Text(bill.name).font(.subheadline.weight(.semibold)).lineLimit(1)
+                                        Text(dueLabel(for: bill.nextDate)).font(.caption)
+                                            .foregroundStyle(bill.nextDate < Calendar.current.startOfDay(for: .now) ? .red : .secondary)
+                                    }
+                                    Spacer()
+                                    Text(AppFormat.money(bill.amount, currencyCode: bill.currencyCode)).fontWeight(.semibold)
+                                        .lineLimit(1).minimumScaleFactor(0.7)
+                                }
+                                .padding(.vertical, 11)
+                                if index < min(upcomingBills.count, 3) - 1 { Divider() }
+                            }
+                        }
+                        .padding(.horizontal).background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .accessibilityIdentifier("upcomingBillsSection")
+                    }
 
                     if !accounts.isEmpty {
                         HStack { sectionHeader("Wallets & Accounts"); NavigationLink("See All") { AccountsView() }.font(.subheadline) }
@@ -138,6 +173,14 @@ struct DashboardView: View {
     }
     private func metric(_ title: LocalizedStringKey, _ value: Double) -> some View { VStack(alignment: .leading, spacing: 8) { Text(title).font(.caption).foregroundStyle(.secondary); Text(AppFormat.money(value, currencyCode: currencyCode)).font(.headline).lineLimit(1).minimumScaleFactor(0.6) }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous)) }
     private func sectionHeader(_ title: LocalizedStringKey) -> some View { HStack { Text(title).font(.headline); Spacer() } }
+    private func dueLabel(for date: Date) -> String {
+        let calendar = Calendar.current
+        let start = calendar.startOfDay(for: .now)
+        if date < start { return AppLanguage.localized("Overdue") }
+        if calendar.isDateInToday(date) { return AppLanguage.localized("Due today") }
+        if calendar.isDateInTomorrow(date) { return AppLanguage.localized("Due tomorrow") }
+        return "\(AppLanguage.localized("Due")) \(date.formatted(date: .abbreviated, time: .omitted))"
+    }
     private func categoryBudgetRow(budget: CategoryBudget, category: CategoryPresentation, spent: Double) -> some View {
         let exceeded = spent > budget.amount
         return VStack(spacing: 6) {

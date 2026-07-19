@@ -12,6 +12,8 @@ LedgerLeaf supports separate built-in and custom income/expense categories. Cust
 
 Recurring transactions can automatically record weekly, monthly, or yearly income and expenses such as salary, rent, and subscriptions. Schedules support custom categories, pause/resume, editing, missed-period catch-up, and duplicate-safe generation.
 
+The dashboard shows active recurring expenses due within the next 30 days, ordered by due date and filtered by the selected currency and wallet. Today, tomorrow, and overdue states are called out clearly.
+
 Monthly category budgets are currency-specific and appear on the dashboard with progress and overspending indicators. Transaction search covers merchants, notes, categories, and payment methods, with additional category, payment-method, and date-range filters.
 
 Existing income and expenses can be duplicated from the transaction list using a leading swipe or long press. LedgerLeaf copies the details into a review form with today's date and always creates a separate transaction; linked account transfers cannot be duplicated.
