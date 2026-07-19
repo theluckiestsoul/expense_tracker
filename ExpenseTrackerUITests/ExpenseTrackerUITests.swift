@@ -82,8 +82,12 @@ final class ExpenseTrackerUITests: XCTestCase {
         app.launch()
 
         app.tabBars.buttons["Settings"].tap()
-        XCTAssertTrue(app.switches["billRemindersToggle"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["exportCompleteBackup"].exists)
+        let reminders = app.switches["billRemindersToggle"]
+        if !reminders.exists { app.swipeUp() }
+        XCTAssertTrue(reminders.waitForExistence(timeout: 5))
+        let exportBackup = app.buttons["exportCompleteBackup"]
+        if !exportBackup.exists { app.swipeUp() }
+        XCTAssertTrue(exportBackup.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["restoreCompleteBackup"].exists)
     }
 

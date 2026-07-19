@@ -10,11 +10,14 @@ struct DashboardView: View {
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
+    @State private var addingType: TransactionType?
+    @State private var transferring = false
     private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON).filter { !$0.isArchived } }
     private var currencyTransactions: [Transaction] { transactions.filter { ($0.currencyCode ?? currencyCode) == currencyCode } }
     private var month: [Transaction] { currencyTransactions.inCurrentMonth() }
     private var savingsGoals: [SavingsGoal] { SavingsGoalStore.decode(savingsGoalsJSON).filter { $0.currencyCode == currencyCode }.sorted { $0.progress > $1.progress } }
     private var ratio: Double { DomainLogic.budgetProgress(spent: month.expenses, budget: budget) }
+    private var canTransfer: Bool { accounts.contains { source in accounts.contains { $0.id != source.id && $0.currencyCode == source.currencyCode } } }
     private var categoryBudgetProgress: [(CategoryBudget, CategoryPresentation, Double)] {
         let custom = CustomCategoryCatalog.decode(customCategoriesJSON)
         return CategoryBudgetStore.decode(categoryBudgetsJSON)
@@ -30,24 +33,41 @@ struct DashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 18) {
+                LazyVStack(spacing: 20) {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Total spent this month").foregroundStyle(.white.opacity(0.85))
+                        Label("This Month", systemImage: "leaf.fill").font(.subheadline.weight(.semibold)).foregroundStyle(.white.opacity(0.85))
+                        Text("Total spent").font(.caption).foregroundStyle(.white.opacity(0.75))
                         Text(AppFormat.money(month.expenses, currencyCode: currencyCode)).font(.largeTitle.bold()).foregroundStyle(.white)
                         HStack { Text("Monthly budget \(AppFormat.money(budget, currencyCode: currencyCode))"); Spacer(); Text(ratio, format: .percent.precision(.fractionLength(0))) }.font(.caption).foregroundStyle(.white)
                         ProgressView(value: ratio).tint(.white)
-                        Text("Remaining  \(AppFormat.money(DomainLogic.budgetRemaining(spent: month.expenses, budget: budget), currencyCode: currencyCode))").fontWeight(.semibold).foregroundStyle(.white)
-                    }.padding().background(LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 18))
+                        HStack {
+                            Label("Remaining \(AppFormat.money(DomainLogic.budgetRemaining(spent: month.expenses, budget: budget), currencyCode: currencyCode))", systemImage: "checkmark.circle.fill")
+                            Spacer()
+                            Text("Income \(AppFormat.money(month.income, currencyCode: currencyCode))")
+                        }.font(.caption.weight(.semibold)).foregroundStyle(.white)
+                    }.padding(20).background(LinearGradient(colors: [.indigo, .teal], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
 
-                    HStack { metric("Today’s spending", currencyTransactions.filter { Calendar.current.isDateInToday($0.transactionDate) && $0.type == .expense && $0.transferID == nil }.reduce(0) { $0 + $1.amount }); metric("This month income", month.income) }
+                    HStack(spacing: 12) {
+                        quickAction("Expense", symbol: "arrow.up.right", color: .orange) { addingType = .expense }
+                        quickAction("Income", symbol: "arrow.down.left", color: .green) { addingType = .income }
+                        if canTransfer { quickAction("Transfer", symbol: "arrow.left.arrow.right", color: .indigo) { transferring = true } }
+                    }
+
+                    HStack { metric("Today’s spending", currencyTransactions.filter { Calendar.current.isDateInToday($0.transactionDate) && $0.type == .expense && $0.transferID == nil }.reduce(0) { $0 + $1.amount }); metric("Net this month", month.income - month.expenses) }
 
                     if !accounts.isEmpty {
-                        sectionHeader("Accounts")
-                        VStack(spacing: 12) {
+                        HStack { sectionHeader("Wallets & Accounts"); NavigationLink("See All") { AccountsView() }.font(.subheadline) }
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 12) {
                             ForEach(accounts) { account in
-                                HStack { Label(account.name, systemImage: account.type.symbol); Spacer(); Text(AppFormat.money(FinancialAccountStore.balance(for: account, transactions: transactions), currencyCode: account.currencyCode)).fontWeight(.semibold) }
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Image(systemName: account.type.symbol).font(.title3).foregroundStyle(.indigo)
+                                    Text(account.name).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                                    Text(AppFormat.money(FinancialAccountStore.balance(for: account, transactions: transactions), currencyCode: account.currencyCode)).font(.headline).lineLimit(1).minimumScaleFactor(0.7)
+                                }.frame(width: 180, alignment: .leading).padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                             }
-                        }.padding().background(.background, in: RoundedRectangle(cornerRadius: 14)).shadow(color: .black.opacity(0.05), radius: 8)
+                            }
+                        }
                     }
 
                     if !categoryBudgetProgress.isEmpty {
@@ -72,17 +92,24 @@ struct DashboardView: View {
                         }.padding().background(.background, in: RoundedRectangle(cornerRadius: 14)).shadow(color: .black.opacity(0.05), radius: 8)
                     }
 
-                    sectionHeader("Recent Transactions")
-                    if transactions.isEmpty { ContentUnavailableView("No transactions", systemImage: "tray", description: Text("Tap Add to record your first transaction.")) }
-                    else { ForEach(transactions.prefix(5)) { TransactionRow(transaction: $0); Divider() } }
+                    HStack { sectionHeader("Recent Transactions"); NavigationLink("See All") { TransactionsView() }.font(.subheadline) }
+                    Group {
+                        if transactions.isEmpty { ContentUnavailableView("No transactions", systemImage: "tray", description: Text("Tap Add to record your first transaction.")) }
+                        else { VStack(spacing: 8) { ForEach(Array(transactions.prefix(4).enumerated()), id: \.element.id) { index, transaction in TransactionRow(transaction: transaction); if index < min(transactions.count, 4) - 1 { Divider() } } } }
+                    }.padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     if transactions.contains(where: { ($0.currencyCode ?? currencyCode) != currencyCode }) {
                         Label("Totals include \(currencyCode) transactions only.", systemImage: "info.circle").font(.footnote).foregroundStyle(.secondary)
                     }
                 }.padding()
-            }.navigationTitle("Dashboard")
+            }.background(Color(uiColor: .systemGroupedBackground)).navigationTitle("Dashboard")
+                .sheet(item: $addingType) { AddTransactionView(startingType: $0) }
+                .sheet(isPresented: $transferring) { TransferView() }
         }
     }
-    private func metric(_ title: LocalizedStringKey, _ value: Double) -> some View { VStack(alignment: .leading, spacing: 8) { Text(title).font(.caption).foregroundStyle(.secondary); Text(AppFormat.money(value, currencyCode: currencyCode)).font(.headline).lineLimit(1).minimumScaleFactor(0.6) }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.background, in: RoundedRectangle(cornerRadius: 14)).shadow(color: .black.opacity(0.06), radius: 8) }
+    private func quickAction(_ title: LocalizedStringKey, symbol: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) { VStack(spacing: 7) { Image(systemName: symbol).font(.headline); Text(title).font(.caption.weight(.medium)).lineLimit(1) }.frame(maxWidth: .infinity).padding(.vertical, 12).foregroundStyle(color).background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: 16, style: .continuous)) }.buttonStyle(.plain)
+    }
+    private func metric(_ title: LocalizedStringKey, _ value: Double) -> some View { VStack(alignment: .leading, spacing: 8) { Text(title).font(.caption).foregroundStyle(.secondary); Text(AppFormat.money(value, currencyCode: currencyCode)).font(.headline).lineLimit(1).minimumScaleFactor(0.6) }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous)) }
     private func sectionHeader(_ title: LocalizedStringKey) -> some View { HStack { Text(title).font(.headline); Spacer() } }
     private func categoryBudgetRow(budget: CategoryBudget, category: CategoryPresentation, spent: Double) -> some View {
         let exceeded = spent > budget.amount

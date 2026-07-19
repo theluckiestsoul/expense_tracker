@@ -4,6 +4,8 @@ A private, local-first iPhone money tracker built with SwiftUI, SwiftData, and S
 
 LedgerLeaf uses a leaf-led navigation identity and circular category markers to keep its interface visually distinct from generic expense trackers while retaining familiar iOS accessibility labels.
 
+The dashboard emphasizes monthly health, one-tap expense and income entry, compact metrics, horizontally scrolling wallet cards, and concise planning sections. Settings separates preferences, planning, automation, backup, and legal tasks to reduce visual density.
+
 LedgerLeaf supports separate built-in and custom income/expense categories. Custom categories can use personalized names, icons, and colors, and can be archived without changing historical transactions. CSV backups include the custom-category metadata and remain compatible with older LedgerLeaf exports.
 
 Recurring transactions can automatically record weekly, monthly, or yearly income and expenses such as salary, rent, and subscriptions. Schedules support custom categories, pause/resume, editing, missed-period catch-up, and duplicate-safe generation.

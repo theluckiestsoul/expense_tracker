@@ -34,6 +34,15 @@ struct AddTransactionView: View {
         _accountID = State(initialValue: transaction?.accountID ?? "")
     }
 
+    init(startingType: TransactionType) {
+        self.transaction = nil; self.isDuplicate = false
+        _type = State(initialValue: startingType)
+        _amount = State(initialValue: "")
+        _categoryID = State(initialValue: ExpenseCategory.cases(for: startingType)[0].rawValue)
+        _payment = State(initialValue: .cash); _transactionCurrency = State(initialValue: CurrencyCatalog.defaultCode)
+        _date = State(initialValue: .now); _merchant = State(initialValue: ""); _notes = State(initialValue: ""); _accountID = State(initialValue: "")
+    }
+
     init(copying source: Transaction) {
         self.transaction = nil
         self.isDuplicate = true
@@ -55,14 +64,14 @@ struct AddTransactionView: View {
             Form {
                 Picker("Type", selection: $type) { ForEach(TransactionType.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
                     .onChange(of: type) { _, newType in categoryID = categoryOptions(for: newType).first?.id ?? ExpenseCategory.cases(for: newType)[0].rawValue }
-                Section {
+                Section("Amount") {
                     HStack {
                         Text(transactionCurrency).font(.headline).foregroundStyle(.secondary)
                         TextField("0.00", text: $amount).font(.largeTitle).keyboardType(.decimalPad).multilineTextAlignment(.trailing)
                             .accessibilityIdentifier("amountField")
                     }
                 }
-                Section {
+                Section("Details") {
                     if accounts.count > 1 {
                         Picker("Wallet or Account", selection: $accountID) {
                             ForEach(accounts) { account in Text("\(account.name) (\(account.currencyCode))").tag(account.id) }
@@ -79,6 +88,8 @@ struct AddTransactionView: View {
                     Picker("Currency", selection: $transactionCurrency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }
                     DatePicker("Date", selection: $date)
                     TextField("Merchant / description", text: $merchant).textInputAutocapitalization(.words)
+                }
+                Section("Optional") {
                     TextField("Notes (optional)", text: $notes, axis: .vertical).lineLimit(2...5)
                 }
             }.navigationTitle(isDuplicate ? "Duplicate Transaction" : (transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction"))).navigationBarTitleDisplayMode(.inline)

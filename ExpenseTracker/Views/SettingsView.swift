@@ -72,11 +72,8 @@ struct SettingsView: View {
                         get: { privacyLockEnabled },
                         set: { updatePrivacyLock($0) }
                     ))
-                    Toggle("Bill Reminders", isOn: Binding(
-                        get: { billRemindersEnabled },
-                        set: { updateBillReminders($0) }
-                    ))
-                    .accessibilityIdentifier("billRemindersToggle")
+                }
+                Section("Plan & Organize") {
                     NavigationLink("Custom Categories") { CustomCategoriesView() }
                         .accessibilityIdentifier("customCategoriesLink")
                     NavigationLink("Wallets & Accounts") { AccountsView() }
@@ -85,6 +82,13 @@ struct SettingsView: View {
                         .accessibilityIdentifier("categoryBudgetsLink")
                     NavigationLink("Savings Goals") { SavingsGoalsView() }
                         .accessibilityIdentifier("savingsGoalsLink")
+                }
+                Section("Automation") {
+                    Toggle("Bill Reminders", isOn: Binding(
+                        get: { billRemindersEnabled },
+                        set: { updateBillReminders($0) }
+                    ))
+                    .accessibilityIdentifier("billRemindersToggle")
                     NavigationLink("Recurring Transactions") { RecurringTransactionsView() }
                         .accessibilityIdentifier("recurringTransactionsLink")
                 }
