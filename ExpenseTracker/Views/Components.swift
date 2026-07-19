@@ -4,7 +4,8 @@ struct CategoryIcon: View {
     let category: CategoryPresentation
     var body: some View {
         Image(systemName: category.symbol).foregroundStyle(.white).frame(width: 38, height: 38)
-            .background(Color.category(category.colorName), in: RoundedRectangle(cornerRadius: 11))
+            .background(Color.category(category.colorName), in: Circle())
+            .overlay { Circle().stroke(.white.opacity(0.28), lineWidth: 1) }
     }
 }
 
