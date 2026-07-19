@@ -116,6 +116,21 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(calendar.component(.hour, from: plans[0].fireDate), 9)
     }
 
+    func testAccountMigrationAndBalances() {
+        let accounts = FinancialAccountStore.ensuringDefault(in: [], currencyCode: "USD")
+        XCTAssertEqual(accounts.count, 1)
+        XCTAssertTrue(accounts[0].isDefault)
+        let income = Transaction(amount: 500, type: .income, category: .salary, paymentMethod: .bank, currencyCode: "USD", transactionDate: .now, merchant: "Employer")
+        let expense = Transaction(amount: 125, type: .expense, category: .food, paymentMethod: .card, currencyCode: "USD", transactionDate: .now, merchant: "Market")
+        let other = FinancialAccount(name: "Euro Wallet", type: .wallet, currencyCode: "EUR", openingBalance: 50)
+        let euroExpense = Transaction(amount: 10, type: .expense, category: .travel, paymentMethod: .cash, currencyCode: "EUR", transactionDate: .now, merchant: "Metro")
+        euroExpense.accountID = other.id
+
+        XCTAssertEqual(FinancialAccountStore.balance(for: accounts[0], transactions: [income, expense, euroExpense]), 375)
+        XCTAssertEqual(FinancialAccountStore.balance(for: other, transactions: [income, expense, euroExpense]), 40)
+        XCTAssertEqual(FinancialAccountStore.decode(FinancialAccountStore.encode(accounts)), accounts)
+    }
+
     func testMismatchedCategoryFallsBackSafely() {
         let transaction = Transaction(amount: 1, type: .income, category: .food, paymentMethod: .cash, currencyCode: "USD", transactionDate: .now, merchant: "")
         XCTAssertEqual(transaction.category, .otherIncome)

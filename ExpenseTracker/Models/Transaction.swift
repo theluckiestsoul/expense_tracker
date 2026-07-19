@@ -86,6 +86,7 @@ final class Transaction {
     var createdAt: Date
     var updatedAt: Date
     var recurringSourceID: UUID?
+    var accountID: String?
 
     var type: TransactionType { get { TransactionType(rawValue: typeRaw) ?? .expense } set { typeRaw = newValue.rawValue } }
     var category: ExpenseCategory {
@@ -105,7 +106,7 @@ final class Transaction {
     init(amount: Double, type: TransactionType, category: ExpenseCategory, paymentMethod: PaymentMethod, currencyCode: String, transactionDate: Date, merchant: String, notes: String = "") {
         id = UUID(); self.amount = amount; typeRaw = type.rawValue; categoryRaw = category.rawValue
         paymentMethodRaw = paymentMethod.rawValue; self.currencyCode = currencyCode; self.transactionDate = transactionDate
-        self.merchant = merchant; self.notes = notes; createdAt = .now; updatedAt = .now; recurringSourceID = nil
+        self.merchant = merchant; self.notes = notes; createdAt = .now; updatedAt = .now; recurringSourceID = nil; accountID = nil
     }
 }
 

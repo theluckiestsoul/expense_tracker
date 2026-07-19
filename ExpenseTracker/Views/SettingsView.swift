@@ -61,6 +61,8 @@ struct SettingsView: View {
                     .accessibilityIdentifier("billRemindersToggle")
                     NavigationLink("Custom Categories") { CustomCategoriesView() }
                         .accessibilityIdentifier("customCategoriesLink")
+                    NavigationLink("Accounts") { AccountsView() }
+                        .accessibilityIdentifier("accountsLink")
                     NavigationLink("Category Budgets") { CategoryBudgetsView() }
                         .accessibilityIdentifier("categoryBudgetsLink")
                     NavigationLink("Recurring Transactions") { RecurringTransactionsView() }

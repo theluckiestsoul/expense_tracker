@@ -6,6 +6,7 @@ struct AddTransactionView: View {
     @Environment(\.modelContext) private var context
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
+    @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     private let transaction: Transaction?
     @State private var type: TransactionType
     @State private var amount: String
@@ -15,6 +16,7 @@ struct AddTransactionView: View {
     @State private var date: Date
     @State private var merchant: String
     @State private var notes: String
+    @State private var accountID: String
     @State private var errorMessage: String?
 
     init(transaction: Transaction? = nil) {
@@ -27,7 +29,10 @@ struct AddTransactionView: View {
         _date = State(initialValue: transaction?.transactionDate ?? .now)
         _merchant = State(initialValue: transaction?.merchant ?? "")
         _notes = State(initialValue: transaction?.notes ?? "")
+        _accountID = State(initialValue: transaction?.accountID ?? "")
     }
+
+    private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON).filter { !$0.isArchived } }
 
     var body: some View {
         NavigationStack {
@@ -42,6 +47,11 @@ struct AddTransactionView: View {
                     }
                 }
                 Section {
+                    Picker("Account", selection: $accountID) {
+                        ForEach(accounts) { account in Text("\(account.name) (\(account.currencyCode))").tag(account.id) }
+                    }.onChange(of: accountID) { _, value in
+                        if let account = accounts.first(where: { $0.id == value }) { transactionCurrency = account.currencyCode }
+                    }
                     Picker("Category", selection: $categoryID) {
                         ForEach(categoryOptions(for: type)) { category in
                             Label(category.name, systemImage: category.symbol).tag(category.id)
@@ -56,7 +66,11 @@ struct AddTransactionView: View {
             }.navigationTitle(transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction")).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveTransactionButton") } }
                 .alert("Couldn’t Save", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
-                .onAppear { if transaction == nil { transactionCurrency = currencyCode } }
+                .onAppear {
+                    if accountID.isEmpty { accountID = accounts.first(where: \.isDefault)?.id ?? accounts.first?.id ?? "" }
+                    if let account = accounts.first(where: { $0.id == accountID }) { transactionCurrency = account.currencyCode }
+                    else if transaction == nil { transactionCurrency = currencyCode }
+                }
         }
     }
     private func save() {
@@ -68,9 +82,11 @@ struct AddTransactionView: View {
             transaction.paymentMethod = payment; transaction.currencyCode = transactionCurrency
             transaction.transactionDate = date; transaction.merchant = cleanMerchant
             transaction.notes = cleanNotes; transaction.updatedAt = .now
+            transaction.accountID = accountID.isEmpty ? nil : accountID
         } else {
             let newTransaction = Transaction(amount: value, type: type, category: ExpenseCategory.cases(for: type)[0], paymentMethod: payment, currencyCode: transactionCurrency, transactionDate: date, merchant: cleanMerchant, notes: cleanNotes)
             newTransaction.categoryRaw = categoryID
+            newTransaction.accountID = accountID.isEmpty ? nil : accountID
             context.insert(newTransaction)
         }
         do { try context.save(); dismiss() } catch { errorMessage = error.localizedDescription }

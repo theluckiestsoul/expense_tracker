@@ -28,11 +28,13 @@ struct RecurringTransaction: Codable, Hashable, Identifiable {
     var frequency: RecurrenceFrequency
     var nextDate: Date
     var isActive: Bool
+    var accountID: String?
 
-    init(id: UUID = UUID(), name: String, amount: Double, type: TransactionType, categoryRaw: String, paymentMethod: PaymentMethod, currencyCode: String, merchant: String, notes: String, frequency: RecurrenceFrequency, nextDate: Date, isActive: Bool = true) {
+    init(id: UUID = UUID(), name: String, amount: Double, type: TransactionType, categoryRaw: String, paymentMethod: PaymentMethod, currencyCode: String, merchant: String, notes: String, frequency: RecurrenceFrequency, nextDate: Date, isActive: Bool = true, accountID: String? = nil) {
         self.id = id; self.name = name; self.amount = amount; self.type = type; self.categoryRaw = categoryRaw
         self.paymentMethod = paymentMethod; self.currencyCode = currencyCode; self.merchant = merchant; self.notes = notes
         self.frequency = frequency; self.nextDate = nextDate; self.isActive = isActive
+        self.accountID = accountID
     }
 }
 
@@ -71,6 +73,7 @@ enum RecurringTransactionProcessor {
                     let transaction = Transaction(amount: schedule.amount, type: schedule.type, category: fallback, paymentMethod: schedule.paymentMethod, currencyCode: schedule.currencyCode, transactionDate: schedule.nextDate, merchant: schedule.merchant, notes: schedule.notes)
                     transaction.categoryRaw = schedule.categoryRaw
                     transaction.recurringSourceID = schedule.id
+                    transaction.accountID = schedule.accountID
                     context.insert(transaction)
                     inserted = true
                 }

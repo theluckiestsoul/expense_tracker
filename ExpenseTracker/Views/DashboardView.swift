@@ -8,6 +8,8 @@ struct DashboardView: View {
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(CategoryBudgetStore.storageKey) private var categoryBudgetsJSON = ""
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
+    @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
+    private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON).filter { !$0.isArchived } }
     private var currencyTransactions: [Transaction] { transactions.filter { ($0.currencyCode ?? currencyCode) == currencyCode } }
     private var month: [Transaction] { currencyTransactions.inCurrentMonth() }
     private var ratio: Double { DomainLogic.budgetProgress(spent: month.expenses, budget: budget) }
@@ -36,6 +38,15 @@ struct DashboardView: View {
                     }.padding().background(LinearGradient(colors: [.blue, .purple], startPoint: .leading, endPoint: .trailing), in: RoundedRectangle(cornerRadius: 18))
 
                     HStack { metric("Today’s spending", currencyTransactions.filter { Calendar.current.isDateInToday($0.transactionDate) && $0.type == .expense }.reduce(0) { $0 + $1.amount }); metric("This month income", month.income) }
+
+                    if !accounts.isEmpty {
+                        sectionHeader("Accounts")
+                        VStack(spacing: 12) {
+                            ForEach(accounts) { account in
+                                HStack { Label(account.name, systemImage: account.type.symbol); Spacer(); Text(AppFormat.money(FinancialAccountStore.balance(for: account, transactions: transactions), currencyCode: account.currencyCode)).fontWeight(.semibold) }
+                            }
+                        }.padding().background(.background, in: RoundedRectangle(cornerRadius: 14)).shadow(color: .black.opacity(0.05), radius: 8)
+                    }
 
                     if !categoryBudgetProgress.isEmpty {
                         sectionHeader("Category Budgets")
