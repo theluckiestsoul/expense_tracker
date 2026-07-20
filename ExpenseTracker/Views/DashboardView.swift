@@ -55,6 +55,15 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 20) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "leaf.fill").font(.title2).foregroundStyle(.white)
+                            .frame(width: 46, height: 46).background(theme.heroColors.first ?? .green, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("LedgerLeaf").font(.title2.bold()).foregroundStyle(theme.accent)
+                            Text("Your financial overview").font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                    }
                     if filterAccounts.count > 1 {
                         Picker("Wallet Filter", selection: $selectedAccountID) {
                             Text("All Wallets").tag("")
@@ -76,6 +85,8 @@ struct DashboardView: View {
                             Text("Income \(AppFormat.money(month.income, currencyCode: currencyCode))")
                         }.font(.caption.weight(.semibold)).foregroundStyle(.white)
                     }.padding(20).background(LinearGradient(colors: theme.heroColors, startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .shadow(color: (theme.heroColors.first ?? .green).opacity(0.22), radius: 16, y: 9)
+                        .coachMarkTarget(.dashboardSummary)
 
                     if budgetStatus == .approaching || budgetStatus == .nearlyReached || budgetStatus == .exceeded {
                         budgetAlert
@@ -83,6 +94,7 @@ struct DashboardView: View {
 
                     HStack(spacing: 12) {
                         quickAction("Expense", symbol: "arrow.up.right", color: .orange) { addingType = .expense }
+                            .coachMarkTarget(.expenseButton)
                         quickAction("Income", symbol: "arrow.down.left", color: .green) { addingType = .income }
                         if canTransfer { quickAction("Transfer", symbol: "arrow.left.arrow.right", color: .indigo) { transferring = true } }
                     }
@@ -188,7 +200,10 @@ struct DashboardView: View {
                         Label("Totals include \(currencyCode) transactions only.", systemImage: "info.circle").font(.footnote).foregroundStyle(.secondary)
                     }
                 }.padding()
-            }.background(Color(uiColor: .systemGroupedBackground)).navigationTitle("Dashboard")
+            }.background(
+                LinearGradient(colors: [theme.accent.opacity(0.08), Color(uiColor: .systemGroupedBackground), Color(uiColor: .systemGroupedBackground)], startPoint: .top, endPoint: .center)
+                    .ignoresSafeArea()
+            ).navigationTitle("Dashboard")
                 .sheet(item: $addingType) { AddTransactionView(startingType: $0) }
                 .sheet(isPresented: $transferring) { TransferView() }
                 .onChange(of: accountsJSON) { _, _ in if selectedAccount == nil { selectedAccountID = "" } }

@@ -6,7 +6,7 @@ LedgerLeaf uses a leaf-led navigation identity and circular category markers to 
 
 The dashboard emphasizes monthly health, one-tap expense and income entry, compact metrics, horizontally scrolling wallet cards, and concise planning sections. A calendar-aware monthly forecast projects end-of-month spending and warns when the current pace may exceed the budget. Budget alerts highlight the 75%, 90%, and exceeded thresholds without interrupting the user. Dashboard and reports can be filtered by wallet while retaining the existing report-period controls. Settings separates preferences, planning, automation, backup, and legal tasks to reduce visual density.
 
-First launch includes an accessible six-step Getting Started guide with Previous, Next, Skip, and completion controls. The guide can be opened again from Settings at any time.
+First launch includes an accessible live coach-mark guide. It dims the real interface, spotlights one actionable control at a time, moves between app functions with Previous and Next, and can be reopened from Settings.
 
 Users can choose System, Leaf, Ocean, Sunset, or Monochrome themes. Themes update the app accent and dashboard identity while preserving semantic income, expense, warning, and success colors.
 

@@ -14,16 +14,24 @@ final class ExpenseTrackerUITests: XCTestCase {
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-hasCompletedOnboarding", "NO"]
         app.launch()
 
-        XCTAssertTrue(app.otherElements["onboardingPage_0"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Your financial overview"].waitForExistence(timeout: 10))
         XCTAssertFalse(app.buttons["onboardingPrevious"].isEnabled)
         app.buttons["onboardingNext"].tap()
-        XCTAssertTrue(app.otherElements["onboardingPage_1"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["Add your first expense"].waitForExistence(timeout: 5))
         app.buttons["onboardingPrevious"].tap()
-        XCTAssertTrue(app.otherElements["onboardingPage_0"].waitForExistence(timeout: 5))
-        for _ in 0..<5 { app.buttons["onboardingNext"].tap() }
+        XCTAssertTrue(app.staticTexts["Your financial overview"].waitForExistence(timeout: 5))
+        app.buttons["onboardingNext"].tap()
+        app.buttons["onboardingNext"].tap()
+        XCTAssertTrue(app.navigationBars["Add Transaction"].waitForExistence(timeout: 5))
+        app.buttons["Cancel"].tap()
+        XCTAssertTrue(app.staticTexts["Find every transaction"].waitForExistence(timeout: 5))
+        app.buttons["onboardingNext"].tap()
+        XCTAssertTrue(app.navigationBars["Transactions"].waitForExistence(timeout: 5))
+        app.buttons["onboardingNext"].tap()
+        XCTAssertTrue(app.navigationBars["Reports"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["finishOnboarding"].waitForExistence(timeout: 5))
         app.buttons["finishOnboarding"].tap()
-        XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10))
     }
 
     func testPrimaryNavigationAndAddForm() {

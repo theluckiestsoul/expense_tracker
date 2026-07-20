@@ -38,7 +38,7 @@ struct SettingsView: View {
     @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     @AppStorage(CategoryBudgetStore.storageKey) private var categoryBudgetsJSON = ""
     @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
-    @AppStorage(OnboardingView.completionKey) private var hasCompletedOnboarding = false
+    @AppStorage(OnboardingCoachMark.completionKey) private var hasCompletedOnboarding = false
     @State private var exporting = false
     @State private var csvExportKind: CSVExportKind = .transactions
     @State private var importing = false
