@@ -15,11 +15,11 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            DashboardView().tabItem { Label("Dashboard", systemImage: "leaf.fill") }.tag(0)
-            TransactionsView().tabItem { Label("Transactions", systemImage: "arrow.up.arrow.down.circle.fill") }.tag(1)
-            Color.clear.tabItem { Label("Add", systemImage: "square.and.pencil") }.tag(2)
-            ReportsView().tabItem { Label("Reports", systemImage: "chart.line.uptrend.xyaxis") }.tag(3)
-            SettingsView().tabItem { Label("Settings", systemImage: "slider.horizontal.3") }.tag(4)
+            DashboardView().tabItem { Label("Dashboard", systemImage: "house.fill") }.tag(0)
+            TransactionsView().tabItem { Label("Transactions", systemImage: "list.bullet.rectangle.fill") }.tag(1)
+            Color.clear.tabItem { Label("Add", systemImage: "plus.app.fill") }.tag(2)
+            ReportsView().tabItem { Label("Reports", systemImage: "chart.pie.fill") }.tag(3)
+            SettingsView().tabItem { Label("Settings", systemImage: "gearshape.fill") }.tag(4)
         }
         .tint(theme.accent)
         .overlayPreferenceValue(CoachMarkTargetKey.self) { targets in

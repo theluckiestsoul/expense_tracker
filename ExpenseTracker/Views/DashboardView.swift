@@ -27,6 +27,16 @@ struct DashboardView: View {
         }
     }
     private var month: [Transaction] { currencyTransactions.inCurrentMonth() }
+    private var previousMonthExpenses: Double {
+        let calendar = Calendar.current
+        guard let currentInterval = calendar.dateInterval(of: .month, for: .now),
+              let previousStart = calendar.date(byAdding: .month, value: -1, to: currentInterval.start) else { return 0 }
+        return currencyTransactions.filter { $0.transactionDate >= previousStart && $0.transactionDate < currentInterval.start }.expenses
+    }
+    private var spendingChange: Double? {
+        guard previousMonthExpenses > 0 else { return nil }
+        return (month.expenses - previousMonthExpenses) / previousMonthExpenses
+    }
     private var upcomingBills: [RecurringTransaction] {
         UpcomingBillPlanner.bills(
             from: RecurringTransactionStore.decode(recurringTransactionsJSON), currencyCode: currencyCode,
@@ -55,15 +65,11 @@ struct DashboardView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(spacing: 20) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "leaf.fill").font(.title2).foregroundStyle(.white)
-                            .frame(width: 46, height: 46).background(theme.heroColors.first ?? .green, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("LedgerLeaf").font(.title2.bold()).foregroundStyle(theme.accent)
-                            Text("Your financial overview").font(.subheadline).foregroundStyle(.secondary)
-                        }
-                        Spacer()
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Hello 👋").font(.title.bold())
+                        Text("Here’s your financial overview").font(.subheadline).foregroundStyle(.secondary)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     if filterAccounts.count > 1 {
                         Picker("Wallet Filter", selection: $selectedAccountID) {
                             Text("All Wallets").tag("")
@@ -73,25 +79,43 @@ struct DashboardView: View {
                         .frame(maxWidth: .infinity, alignment: .trailing)
                         .accessibilityIdentifier("dashboardAccountFilter")
                     }
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label(selectedAccount.map { "This Month · \($0.name)" } ?? "This Month", systemImage: "leaf.fill").font(.subheadline.weight(.semibold)).foregroundStyle(.white.opacity(0.85))
-                        Text("Total spent").font(.caption).foregroundStyle(.white.opacity(0.75))
-                        Text(AppFormat.money(month.expenses, currencyCode: currencyCode)).font(.largeTitle.bold()).foregroundStyle(.white)
-                        HStack { Text("Monthly budget \(AppFormat.money(budget, currencyCode: currencyCode))"); Spacer(); Text(ratio, format: .percent.precision(.fractionLength(0))) }.font(.caption).foregroundStyle(.white)
-                        ProgressView(value: ratio).tint(.white)
+                    VStack(alignment: .leading, spacing: 14) {
                         HStack {
-                            Label("Remaining \(AppFormat.money(DomainLogic.budgetRemaining(spent: month.expenses, budget: budget), currencyCode: currencyCode))", systemImage: "checkmark.circle.fill")
+                            Label(selectedAccount.map { "Monthly Spending · \($0.name)" } ?? "Monthly Spending", systemImage: "leaf.fill")
+                                .font(.headline).foregroundStyle(theme.accent)
                             Spacer()
-                            Text("Income \(AppFormat.money(month.income, currencyCode: currencyCode))")
-                        }.font(.caption.weight(.semibold)).foregroundStyle(.white)
-                    }.padding(20).background(LinearGradient(colors: theme.heroColors, startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-                        .shadow(color: (theme.heroColors.first ?? .green).opacity(0.22), radius: 16, y: 9)
+                            if let spendingChange {
+                                Label {
+                                    Text(spendingChange, format: .percent.precision(.fractionLength(0)))
+                                } icon: {
+                                    Image(systemName: spendingChange <= 0 ? "arrow.down.right" : "arrow.up.right")
+                                }
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(spendingChange <= 0 ? .green : .orange)
+                                    .padding(.horizontal, 10).padding(.vertical, 6)
+                                    .background((spendingChange <= 0 ? Color.green : Color.orange).opacity(0.1), in: Capsule())
+                            }
+                        }
+                        Text(AppFormat.money(month.expenses, currencyCode: currencyCode))
+                            .font(.system(size: 38, weight: .bold, design: .rounded)).lineLimit(1).minimumScaleFactor(0.7)
+                        Text("of \(AppFormat.money(budget, currencyCode: currencyCode)) budget")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                        ProgressView(value: ratio).tint(theme.accent).scaleEffect(y: 1.35)
+                        HStack {
+                            Text("\(AppFormat.money(DomainLogic.budgetRemaining(spent: month.expenses, budget: budget), currencyCode: currencyCode)) left to spend")
+                                .foregroundStyle(theme.accent)
+                            Spacer()
+                            Text(ratio, format: .percent.precision(.fractionLength(0)))
+                        }.font(.caption.weight(.semibold))
+                    }.padding(20).background(.background, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .shadow(color: .black.opacity(0.08), radius: 16, y: 8)
                         .coachMarkTarget(.dashboardSummary)
 
                     if budgetStatus == .approaching || budgetStatus == .nearlyReached || budgetStatus == .exceeded {
                         budgetAlert
                     }
 
+                    sectionHeader("Quick Actions")
                     HStack(spacing: 12) {
                         quickAction("Expense", symbol: "arrow.up.right", color: .orange) { addingType = .expense }
                             .coachMarkTarget(.expenseButton)
@@ -120,6 +144,12 @@ struct DashboardView: View {
                         .padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                         .accessibilityIdentifier("monthlySpendingForecast")
                     }
+
+                    HStack { sectionHeader("Recent Transactions"); NavigationLink("See All") { TransactionsView() }.font(.subheadline.weight(.semibold)) }
+                    Group {
+                        if currencyTransactions.isEmpty { ContentUnavailableView("No transactions", systemImage: "tray", description: Text("Tap Add to record your first transaction.")) }
+                        else { VStack(spacing: 8) { ForEach(Array(currencyTransactions.prefix(4).enumerated()), id: \.element.id) { index, transaction in TransactionRow(transaction: transaction); if index < min(currencyTransactions.count, 4) - 1 { Divider() } } } }
+                    }.padding().background(.background, in: RoundedRectangle(cornerRadius: 20, style: .continuous)).shadow(color: .black.opacity(0.05), radius: 10, y: 5)
 
                     if !upcomingBills.isEmpty {
                         HStack {
@@ -191,11 +221,6 @@ struct DashboardView: View {
                         }.padding().background(.background, in: RoundedRectangle(cornerRadius: 14)).shadow(color: .black.opacity(0.05), radius: 8)
                     }
 
-                    HStack { sectionHeader("Recent Transactions"); NavigationLink("See All") { TransactionsView() }.font(.subheadline) }
-                    Group {
-                        if currencyTransactions.isEmpty { ContentUnavailableView("No transactions", systemImage: "tray", description: Text("Tap Add to record your first transaction.")) }
-                        else { VStack(spacing: 8) { ForEach(Array(currencyTransactions.prefix(4).enumerated()), id: \.element.id) { index, transaction in TransactionRow(transaction: transaction); if index < min(currencyTransactions.count, 4) - 1 { Divider() } } } }
-                    }.padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     if transactions.contains(where: { ($0.currencyCode ?? currencyCode) != currencyCode }) {
                         Label("Totals include \(currencyCode) transactions only.", systemImage: "info.circle").font(.footnote).foregroundStyle(.secondary)
                     }
@@ -203,14 +228,32 @@ struct DashboardView: View {
             }.background(
                 LinearGradient(colors: [theme.accent.opacity(0.08), Color(uiColor: .systemGroupedBackground), Color(uiColor: .systemGroupedBackground)], startPoint: .top, endPoint: .center)
                     .ignoresSafeArea()
-            ).navigationTitle("Dashboard")
+            ).navigationTitle("Dashboard").navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "leaf.fill")
+                            Text("LedgerLeaf")
+                        }
+                        .font(.headline.weight(.bold)).foregroundStyle(theme.accent).fixedSize()
+                    }
+                }
                 .sheet(item: $addingType) { AddTransactionView(startingType: $0) }
                 .sheet(isPresented: $transferring) { TransferView() }
                 .onChange(of: accountsJSON) { _, _ in if selectedAccount == nil { selectedAccountID = "" } }
         }
     }
     private func quickAction(_ title: LocalizedStringKey, symbol: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) { VStack(spacing: 7) { Image(systemName: symbol).font(.headline); Text(title).font(.caption.weight(.medium)).lineLimit(1) }.frame(maxWidth: .infinity).padding(.vertical, 12).foregroundStyle(color).background(color.opacity(0.1), in: RoundedRectangle(cornerRadius: 16, style: .continuous)) }.buttonStyle(.plain)
+        Button(action: action) {
+            VStack(spacing: 10) {
+                Image(systemName: symbol).font(.title2.weight(.semibold))
+                    .frame(width: 38, height: 38).background(.white.opacity(0.18), in: Circle())
+                Text(title).font(.subheadline.weight(.semibold)).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity).padding(.vertical, 16).foregroundStyle(.white)
+            .background(LinearGradient(colors: [color.opacity(0.78), color], startPoint: .topLeading, endPoint: .bottomTrailing), in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .shadow(color: color.opacity(0.2), radius: 8, y: 5)
+        }.buttonStyle(.plain)
     }
     private func metric(_ title: LocalizedStringKey, _ value: Double) -> some View { VStack(alignment: .leading, spacing: 8) { Text(title).font(.caption).foregroundStyle(.secondary); Text(AppFormat.money(value, currencyCode: currencyCode)).font(.headline).lineLimit(1).minimumScaleFactor(0.6) }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous)) }
     private func sectionHeader(_ title: LocalizedStringKey) -> some View { HStack { Text(title).font(.headline); Spacer() } }
