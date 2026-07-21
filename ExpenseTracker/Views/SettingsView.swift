@@ -173,6 +173,7 @@ struct SettingsView: View {
                     $0.type.rawValue, category.isCustom ? category.name : $0.categoryRaw, $0.paymentMethod.rawValue,
                     $0.transactionDate.ISO8601Format(), $0.merchant, $0.notes,
                     category.symbol, category.colorName,
+                    $0.transferID?.uuidString ?? "", $0.tags.joined(separator: ", "),
                     $0.createdAt.ISO8601Format()
                 ]
             }
@@ -224,6 +225,7 @@ struct SettingsView: View {
             transaction.createdAt = record.createdAt; transaction.updatedAt = record.updatedAt
             transaction.recurringSourceID = record.recurringSourceID; transaction.accountID = record.accountID
             transaction.transferID = record.transferID
+            transaction.tags = record.tags ?? []
             if existing[record.id] == nil { context.insert(transaction) }
         }
         do {
@@ -265,6 +267,7 @@ struct SettingsView: View {
             )
             transaction.categoryRaw = record.categoryRaw
             transaction.transferID = record.transferID
+            transaction.tags = record.tags
             transaction.createdAt = record.createdAt
             transaction.updatedAt = record.createdAt
             context.insert(transaction)
@@ -280,19 +283,19 @@ struct SettingsView: View {
         backupFingerprint(amount: transaction.amount, currency: transaction.currencyCode ?? currencyCode,
                           type: transaction.type, categoryRaw: transaction.categoryRaw, payment: transaction.paymentMethod,
                           transactionDate: transaction.transactionDate, merchant: transaction.merchant,
-                          notes: transaction.notes, transferID: transaction.transferID, createdAt: transaction.createdAt)
+                          notes: transaction.notes, transferID: transaction.transferID, tags: transaction.tags, createdAt: transaction.createdAt)
     }
 
     private func backupFingerprint(_ transaction: CSVBackup.ImportedTransaction) -> String {
         backupFingerprint(amount: transaction.amount, currency: transaction.currencyCode,
                           type: transaction.type, categoryRaw: transaction.categoryRaw, payment: transaction.paymentMethod,
                           transactionDate: transaction.transactionDate, merchant: transaction.merchant,
-                          notes: transaction.notes, transferID: transaction.transferID, createdAt: transaction.createdAt)
+                          notes: transaction.notes, transferID: transaction.transferID, tags: transaction.tags, createdAt: transaction.createdAt)
     }
 
-    private func backupFingerprint(amount: Double, currency: String, type: TransactionType, categoryRaw: String, payment: PaymentMethod, transactionDate: Date, merchant: String, notes: String, transferID: UUID?, createdAt: Date) -> String {
+    private func backupFingerprint(amount: Double, currency: String, type: TransactionType, categoryRaw: String, payment: PaymentMethod, transactionDate: Date, merchant: String, notes: String, transferID: UUID?, tags: [String], createdAt: Date) -> String {
         DomainLogic.csv(rows: [[String(amount), currency, type.rawValue, categoryRaw, payment.rawValue,
-                                transactionDate.ISO8601Format(), merchant, notes, transferID?.uuidString ?? "", createdAt.ISO8601Format()]])
+                                transactionDate.ISO8601Format(), merchant, notes, transferID?.uuidString ?? "", tags.joined(separator: ", "), createdAt.ISO8601Format()]])
     }
 
     private func showError(_ error: Error) {

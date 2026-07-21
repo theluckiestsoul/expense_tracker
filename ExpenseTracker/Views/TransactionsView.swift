@@ -27,6 +27,7 @@ struct TransactionsView: View {
     @State private var search = ""
     @State private var categoryFilter = ""
     @State private var paymentFilter = ""
+    @State private var tagFilter = ""
     @State private var dateFilter = TransactionDateFilter.all
     @State private var showingFilters = false
     @State private var editing: Transaction?
@@ -38,7 +39,8 @@ struct TransactionsView: View {
         let types = filter.map { [$0] } ?? TransactionType.allCases
         return types.flatMap { CustomCategoryCatalog.options(for: $0, custom: customCategories) }
     }
-    private var activeFilterCount: Int { (categoryFilter.isEmpty ? 0 : 1) + (paymentFilter.isEmpty ? 0 : 1) + (dateFilter == .all ? 0 : 1) }
+    private var availableTags: [String] { Array(Set(all.flatMap(\.tags))).sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending } }
+    private var activeFilterCount: Int { (categoryFilter.isEmpty ? 0 : 1) + (paymentFilter.isEmpty ? 0 : 1) + (tagFilter.isEmpty ? 0 : 1) + (dateFilter == .all ? 0 : 1) }
     private var shown: [Transaction] {
         let term = search.trimmingCharacters(in: .whitespacesAndNewlines)
         return all.filter { transaction in
@@ -47,9 +49,11 @@ struct TransactionsView: View {
                 || transaction.notes.localizedCaseInsensitiveContains(term)
                 || category.name.localizedCaseInsensitiveContains(term)
                 || transaction.paymentMethod.displayName.localizedCaseInsensitiveContains(term)
+                || transaction.tags.contains(where: { $0.localizedCaseInsensitiveContains(term) })
             return (filter == nil || transaction.type == filter)
                 && (categoryFilter.isEmpty || transaction.categoryRaw == categoryFilter)
                 && (paymentFilter.isEmpty || transaction.paymentMethodRaw == paymentFilter)
+                && (tagFilter.isEmpty || transaction.tags.contains(where: { $0.caseInsensitiveCompare(tagFilter) == .orderedSame }))
                 && dateFilter.includes(transaction.transactionDate)
                 && matchesSearch
         }
@@ -77,7 +81,7 @@ struct TransactionsView: View {
                         }
                 }
                     .onDelete { offsets in pendingDeletion = offsets.map { shown[$0] } }
-            }.navigationTitle("Transactions").searchable(text: $search, prompt: "Merchant, notes, category, payment")
+            }.navigationTitle("Transactions").searchable(text: $search, prompt: "Merchant, notes, category, payment, tag")
                 .toolbar {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button { showingFilters = true } label: {
@@ -101,6 +105,12 @@ struct TransactionsView: View {
                                 Text("All Payment Methods").tag("")
                                 ForEach(PaymentMethod.allCases) { Text($0.displayName).tag($0.rawValue) }
                             }
+                            if !availableTags.isEmpty {
+                                Picker("Tag", selection: $tagFilter) {
+                                    Text("All Tags").tag("")
+                                    ForEach(availableTags, id: \.self) { Text("#\($0)").tag($0) }
+                                }
+                            }
                             if activeFilterCount > 0 { Button("Clear Filters", role: .destructive) { clearFilters() } }
                         }
                         .navigationTitle("Filter Transactions").navigationBarTitleDisplayMode(.inline)
@@ -120,5 +130,5 @@ struct TransactionsView: View {
         Dictionary((pendingDeletion + linked).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first }).values.forEach(context.delete)
         do { try context.save(); pendingDeletion = [] } catch { context.rollback(); errorMessage = error.localizedDescription; pendingDeletion = [] }
     }
-    private func clearFilters() { categoryFilter = ""; paymentFilter = ""; dateFilter = .all }
+    private func clearFilters() { categoryFilter = ""; paymentFilter = ""; tagFilter = ""; dateFilter = .all }
 }

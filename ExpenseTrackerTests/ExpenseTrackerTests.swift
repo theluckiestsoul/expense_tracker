@@ -3,6 +3,19 @@ import SwiftData
 @testable import ExpenseTracker
 
 final class ExpenseTrackerTests: XCTestCase {
+    func testTransactionTagsNormalizeLimitAndRoundTrip() {
+        let longTag = String(repeating: "a", count: 30)
+        let parsed = TransactionTags.parse(" Work, work, Café, , \(longTag), tax, one, two, three, four, five, six")
+        XCTAssertEqual(parsed.prefix(3), ["Work", "Café", String(repeating: "a", count: 24)])
+        XCTAssertEqual(parsed.count, TransactionTags.maximumCount)
+        XCTAssertEqual(TransactionTags.decode(TransactionTags.encode(parsed)), parsed)
+
+        let transaction = Transaction(amount: 10, type: .expense, category: .food, paymentMethod: .card,
+                                      currencyCode: "USD", transactionDate: .now, merchant: "Cafe")
+        transaction.tags = ["work", "tax"]
+        XCTAssertEqual(transaction.duplicated()?.tags, ["work", "tax"])
+    }
+
     func testMerchantRulesNormalizeMatchUpdateAndLimit() {
         let cafe = MerchantRule(merchantName: "  Café   Central  ", type: .expense,
                                 categoryID: ExpenseCategory.food.rawValue, paymentMethod: .card,
@@ -132,6 +145,7 @@ final class ExpenseTrackerTests: XCTestCase {
             transactionDate.ISO8601Format(), "Cafe, Central", "He said \"hello\"",
             "fork.knife", "indigo",
             "",
+            "work, reimbursable",
             createdAt.ISO8601Format()
         ]
         let backup = DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders, row])
@@ -143,6 +157,7 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(restored[0].categoryRaw, ExpenseCategory.food.rawValue)
         XCTAssertEqual(restored[0].merchant, "Cafe, Central")
         XCTAssertEqual(restored[0].notes, "He said \"hello\"")
+        XCTAssertEqual(restored[0].tags, ["work", "reimbursable"])
     }
 
     func testEmptyCSVTemplateIsValidAndImportsNoTransactions() throws {
@@ -201,7 +216,7 @@ final class ExpenseTrackerTests: XCTestCase {
     func testCustomCategoryRoundTripsThroughCSV() throws {
         let date = Date(timeIntervalSince1970: 1_700_000_000)
         let row = ["10.0", "USD", "expense", "Pets", "Cash", date.ISO8601Format(), "", "",
-                   "pawprint.fill", "orange", "", date.ISO8601Format()]
+                   "pawprint.fill", "orange", "", "", date.ISO8601Format()]
         let restored = try CSVBackup.importTransactions(from: DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders, row]))
 
         XCTAssertTrue(restored.first?.categoryRaw.hasPrefix("custom:import:") == true)
@@ -225,7 +240,7 @@ final class ExpenseTrackerTests: XCTestCase {
 
         let transferID = UUID()
         let currentRow = ["10.0", "USD", "expense", "Other Expense", "Bank Transfer", date.ISO8601Format(), "Transfer", "",
-                          "ellipsis.circle.fill", "gray", transferID.uuidString, date.ISO8601Format()]
+                          "ellipsis.circle.fill", "gray", transferID.uuidString, "", date.ISO8601Format()]
         let current = try CSVBackup.importTransactions(from: DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders, currentRow]))
         XCTAssertEqual(current.first?.transferID, transferID)
     }

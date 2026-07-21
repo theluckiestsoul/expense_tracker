@@ -19,7 +19,8 @@ struct TransactionRow: View {
             CategoryIcon(category: category)
             VStack(alignment: .leading, spacing: 3) {
                 Text(transaction.merchant.isEmpty ? category.name : transaction.merchant).font(.headline)
-                Text(category.name).font(.caption).foregroundStyle(.secondary)
+                Text(([category.name] + transaction.tags.map { "#\($0)" }).joined(separator: "  "))
+                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 3) {

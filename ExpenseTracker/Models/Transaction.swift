@@ -88,6 +88,7 @@ final class Transaction {
     var recurringSourceID: UUID?
     var accountID: String?
     var transferID: UUID?
+    var tagsRaw: String?
 
     var type: TransactionType { get { TransactionType(rawValue: typeRaw) ?? .expense } set { typeRaw = newValue.rawValue } }
     var category: ExpenseCategory {
@@ -103,11 +104,16 @@ final class Transaction {
         CustomCategoryCatalog.presentation(for: categoryRaw, type: type, custom: customCategories)
     }
     var paymentMethod: PaymentMethod { get { PaymentMethod(rawValue: paymentMethodRaw) ?? .upi } set { paymentMethodRaw = newValue.rawValue } }
+    var tags: [String] {
+        get { TransactionTags.decode(tagsRaw) }
+        set { tagsRaw = TransactionTags.encode(newValue) }
+    }
 
     init(amount: Double, type: TransactionType, category: ExpenseCategory, paymentMethod: PaymentMethod, currencyCode: String, transactionDate: Date, merchant: String, notes: String = "") {
         id = UUID(); self.amount = amount; typeRaw = type.rawValue; categoryRaw = category.rawValue
         paymentMethodRaw = paymentMethod.rawValue; self.currencyCode = currencyCode; self.transactionDate = transactionDate
         self.merchant = merchant; self.notes = notes; createdAt = .now; updatedAt = .now; recurringSourceID = nil; accountID = nil; transferID = nil
+        tagsRaw = nil
     }
 }
 
@@ -119,7 +125,40 @@ extension Transaction {
                                transactionDate: date, merchant: merchant, notes: notes)
         copy.categoryRaw = categoryRaw
         copy.accountID = accountID
+        copy.tags = tags
         return copy
+    }
+}
+
+enum TransactionTags {
+    static let maximumCount = 8
+    static let maximumLength = 24
+
+    static func parse(_ input: String) -> [String] {
+        normalized(input.split(separator: ",").map(String.init))
+    }
+
+    static func normalized(_ tags: [String]) -> [String] {
+        var seen = Set<String>()
+        return tags.compactMap { value in
+            let clean = String(value.trimmingCharacters(in: .whitespacesAndNewlines).prefix(maximumLength))
+            guard !clean.isEmpty else { return nil }
+            let key = clean.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: .current)
+            guard seen.insert(key).inserted else { return nil }
+            return clean
+        }.prefix(maximumCount).map { $0 }
+    }
+
+    static func encode(_ tags: [String]) -> String? {
+        let values = normalized(tags)
+        guard !values.isEmpty, let data = try? JSONEncoder().encode(values) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    static func decode(_ value: String?) -> [String] {
+        guard let value, let data = value.data(using: .utf8),
+              let tags = try? JSONDecoder().decode([String].self, from: data) else { return [] }
+        return normalized(tags)
     }
 }
 

@@ -18,6 +18,7 @@ struct AddTransactionView: View {
     @State private var date: Date
     @State private var merchant: String
     @State private var notes: String
+    @State private var tagsText: String
     @State private var errorMessage: String?
     @State private var alertTitle = "Couldn’t Save"
     @State private var receiptItem: PhotosPickerItem?
@@ -37,6 +38,7 @@ struct AddTransactionView: View {
         _date = State(initialValue: transaction?.transactionDate ?? .now)
         _merchant = State(initialValue: transaction?.merchant ?? "")
         _notes = State(initialValue: transaction?.notes ?? "")
+        _tagsText = State(initialValue: transaction?.tags.joined(separator: ", ") ?? "")
     }
 
     init(startingType: TransactionType) {
@@ -46,6 +48,7 @@ struct AddTransactionView: View {
         _categoryID = State(initialValue: ExpenseCategory.cases(for: startingType)[0].rawValue)
         _payment = State(initialValue: .cash); _transactionCurrency = State(initialValue: CurrencyCatalog.defaultCode)
         _date = State(initialValue: .now); _merchant = State(initialValue: ""); _notes = State(initialValue: "")
+        _tagsText = State(initialValue: "")
     }
 
     init(copying source: Transaction) {
@@ -59,6 +62,7 @@ struct AddTransactionView: View {
         _date = State(initialValue: .now)
         _merchant = State(initialValue: source.merchant)
         _notes = State(initialValue: source.notes)
+        _tagsText = State(initialValue: source.tags.joined(separator: ", "))
     }
 
     var body: some View {
@@ -99,6 +103,11 @@ struct AddTransactionView: View {
                 }
                 Section("Optional") {
                     TextField("Notes (optional)", text: $notes, axis: .vertical).lineLimit(2...5)
+                    TextField("Tags (comma separated)", text: $tagsText)
+                        .textInputAutocapitalization(.never)
+                        .accessibilityIdentifier("transactionTagsField")
+                    Text("Add up to 8 labels, such as work, tax, vacation, or reimbursable.")
+                        .font(.caption).foregroundStyle(.secondary)
                     if !MerchantRuleStore.normalizedKey(merchant).isEmpty {
                         Toggle("Remember choices for this merchant", isOn: $rememberMerchant)
                             .accessibilityIdentifier("rememberMerchantRule")
@@ -124,9 +133,11 @@ struct AddTransactionView: View {
             transaction.paymentMethod = payment; transaction.currencyCode = transactionCurrency
             transaction.transactionDate = date; transaction.merchant = cleanMerchant
             transaction.notes = cleanNotes; transaction.updatedAt = .now
+            transaction.tags = TransactionTags.parse(tagsText)
         } else {
             let newTransaction = Transaction(amount: value, type: type, category: ExpenseCategory.cases(for: type)[0], paymentMethod: payment, currencyCode: transactionCurrency, transactionDate: date, merchant: cleanMerchant, notes: cleanNotes)
             newTransaction.categoryRaw = categoryID
+            newTransaction.tags = TransactionTags.parse(tagsText)
             context.insert(newTransaction)
         }
         do {

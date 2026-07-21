@@ -48,6 +48,8 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["Wallet or Account"].exists)
         let merchant = app.textFields["merchantField"]
         merchant.tap(); merchant.typeText("Example Cafe")
+        app.swipeUp()
+        XCTAssertTrue(app.textFields["transactionTagsField"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.switches["rememberMerchantRule"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.buttons["saveTransactionButton"].isEnabled)
         app.buttons["Cancel"].tap()

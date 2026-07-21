@@ -12,17 +12,19 @@ enum CSVBackup {
         let merchant: String
         let notes: String
         let transferID: UUID?
+        let tags: [String]
         let createdAt: Date
     }
 
     static func importTransactions(from text: String) throws -> [ImportedTransaction] {
         let rows = try DomainLogic.parseCSV(text)
         guard let headers = rows.first,
-              [DomainLogic.transactionCSVHeaders, DomainLogic.previousTransactionCSVHeaders, DomainLogic.legacyTransactionCSVHeaders].contains(headers) else {
+              [DomainLogic.transactionCSVHeaders, DomainLogic.transferTransactionCSVHeaders, DomainLogic.previousTransactionCSVHeaders, DomainLogic.legacyTransactionCSVHeaders].contains(headers) else {
             throw DomainLogic.CSVError.invalidHeaders
         }
         let isLegacy = headers == DomainLogic.legacyTransactionCSVHeaders
-        let includesTransferID = headers == DomainLogic.transactionCSVHeaders
+        let includesTransferID = headers == DomainLogic.transactionCSVHeaders || headers == DomainLogic.transferTransactionCSVHeaders
+        let includesTags = headers == DomainLogic.transactionCSVHeaders
         let formatter = ISO8601DateFormatter()
         return try rows.dropFirst().enumerated().map { offset, row in
             let rowNumber = offset + 2
@@ -33,7 +35,7 @@ enum CSVBackup {
                   let type = TransactionType(rawValue: row[2]),
                   let payment = PaymentMethod(rawValue: row[4]),
                   let transactionDate = formatter.date(from: row[5]),
-                  let createdAt = formatter.date(from: row[isLegacy ? 8 : (includesTransferID ? 11 : 10)]) else {
+                  let createdAt = formatter.date(from: row[row.count - 1]) else {
                 throw DomainLogic.CSVError.invalidRow(rowNumber)
             }
             let transferID: UUID?
@@ -43,6 +45,7 @@ enum CSVBackup {
             } else {
                 transferID = nil
             }
+            let tags = includesTags ? TransactionTags.parse(row[11]) : []
             let categoryRaw: String
             let customCategory: CustomCategory?
             if let category = ExpenseCategory(rawValue: row[3]), ExpenseCategory.cases(for: type).contains(category) {
@@ -61,7 +64,8 @@ enum CSVBackup {
                 amount: amount, currencyCode: row[1], type: type, categoryRaw: categoryRaw, customCategory: customCategory,
                 paymentMethod: payment, transactionDate: transactionDate,
                 merchant: DomainLogic.sanitizedText(row[6], maximumLength: 80),
-                notes: DomainLogic.sanitizedText(row[7], maximumLength: 240), transferID: transferID, createdAt: createdAt
+                notes: DomainLogic.sanitizedText(row[7], maximumLength: 240), transferID: transferID,
+                tags: tags, createdAt: createdAt
             )
         }
     }

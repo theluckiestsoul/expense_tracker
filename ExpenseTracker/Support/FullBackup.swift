@@ -23,6 +23,7 @@ struct LedgerLeafBackup: Codable, Equatable {
         var recurringSourceID: UUID?
         var accountID: String?
         var transferID: UUID?
+        var tags: [String]? = nil
 
         init(_ transaction: Transaction, fallbackCurrency: String) {
             id = transaction.id; amount = transaction.amount; type = transaction.type
@@ -31,6 +32,7 @@ struct LedgerLeafBackup: Codable, Equatable {
             merchant = transaction.merchant; notes = transaction.notes; createdAt = transaction.createdAt
             updatedAt = transaction.updatedAt; recurringSourceID = transaction.recurringSourceID
             accountID = transaction.accountID; transferID = transaction.transferID
+            tags = transaction.tags
         }
     }
 
@@ -89,7 +91,7 @@ struct LedgerLeafBackup: Codable, Equatable {
               preferences.themeRaw.map({ AppTheme(rawValue: $0) != nil }) ?? true,
               preferences.monthlyBudget.isFinite, preferences.monthlyBudget >= 0,
               Set(transactions.map(\.id)).count == transactions.count,
-              transactions.allSatisfy({ $0.amount.isFinite && $0.amount > 0 && currencies.contains($0.currencyCode) }),
+              transactions.allSatisfy({ $0.amount.isFinite && $0.amount > 0 && currencies.contains($0.currencyCode) && TransactionTags.normalized($0.tags ?? []) == ($0.tags ?? []) }),
               Set(customCategories.map(\.id)).count == customCategories.count,
               customCategories.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && CustomCategoryCatalog.symbols.contains($0.symbol) && CustomCategoryCatalog.colors.contains($0.colorName) }),
               Set(accounts.map(\.id)).count == accounts.count,
