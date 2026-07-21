@@ -32,7 +32,7 @@ struct OnboardingCoachMark: View {
         Step(title: "Add your first expense", detail: "Tap the highlighted button to record an amount, category, merchant, or receipt.", symbol: "arrow.up.right"),
         Step(title: "Find every transaction", detail: "Transactions lets you search, filter, edit, duplicate, and delete your records.", symbol: "arrow.up.arrow.down.circle.fill"),
         Step(title: "Understand your habits", detail: "Reports compares periods and shows cash flow, savings rate, and category trends.", symbol: "chart.line.uptrend.xyaxis"),
-        Step(title: "Make LedgerLeaf yours", detail: "Settings contains language, currency, themes, budgets, reminders, backups, and the optional accounts feature.", symbol: "slider.horizontal.3")
+        Step(title: "Make LedgerLeaf yours", detail: "Settings contains language, currency, themes, budgets, reminders, privacy, and backups.", symbol: "slider.horizontal.3")
     ]
 
     let step: Int

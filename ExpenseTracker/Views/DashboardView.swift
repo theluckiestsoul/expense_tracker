@@ -8,23 +8,13 @@ struct DashboardView: View {
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(CategoryBudgetStore.storageKey) private var categoryBudgetsJSON = ""
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
-    @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
     @AppStorage(RecurringTransactionStore.storageKey) private var recurringTransactionsJSON = ""
     @AppStorage(AppTheme.storageKey) private var themeRaw = AppTheme.system.rawValue
     @State private var addingType: TransactionType?
-    @State private var transferring = false
-    @State private var selectedAccountID = ""
-    private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON).filter { !$0.isArchived } }
-    private var filterAccounts: [FinancialAccount] { accounts.filter { $0.currencyCode == currencyCode } }
-    private var selectedAccount: FinancialAccount? { filterAccounts.first { $0.id == selectedAccountID } }
     private var theme: AppTheme { AppTheme(rawValue: themeRaw) ?? .system }
     private var currencyTransactions: [Transaction] {
-        transactions.filter { transaction in
-            guard (transaction.currencyCode ?? currencyCode) == currencyCode else { return false }
-            guard let selectedAccount else { return true }
-            return FinancialAccountStore.matches(transaction, account: selectedAccount)
-        }
+        transactions.filter { ($0.currencyCode ?? currencyCode) == currencyCode }
     }
     private var month: [Transaction] { currencyTransactions.inCurrentMonth() }
     private var previousMonthExpenses: Double {
@@ -38,17 +28,12 @@ struct DashboardView: View {
         return (month.expenses - previousMonthExpenses) / previousMonthExpenses
     }
     private var upcomingBills: [RecurringTransaction] {
-        UpcomingBillPlanner.bills(
-            from: RecurringTransactionStore.decode(recurringTransactionsJSON), currencyCode: currencyCode,
-            selectedAccountID: selectedAccountID.isEmpty ? nil : selectedAccountID,
-            defaultAccountID: accounts.first(where: \.isDefault)?.id
-        )
+        UpcomingBillPlanner.bills(from: RecurringTransactionStore.decode(recurringTransactionsJSON), currencyCode: currencyCode)
     }
     private var savingsGoals: [SavingsGoal] { SavingsGoalStore.decode(savingsGoalsJSON).filter { $0.currencyCode == currencyCode }.sorted { $0.progress > $1.progress } }
     private var ratio: Double { DomainLogic.budgetProgress(spent: month.expenses, budget: budget) }
     private var budgetStatus: DomainLogic.BudgetStatus { DomainLogic.budgetStatus(spent: month.expenses, budget: budget) }
     private var projectedSpend: Double? { DomainLogic.projectedMonthlySpend(spent: month.expenses) }
-    private var canTransfer: Bool { accounts.contains { source in accounts.contains { $0.id != source.id && $0.currencyCode == source.currencyCode } } }
     private var categoryBudgetProgress: [(CategoryBudget, CategoryPresentation, Double)] {
         let custom = CustomCategoryCatalog.decode(customCategoriesJSON)
         return CategoryBudgetStore.decode(categoryBudgetsJSON)
@@ -70,18 +55,9 @@ struct DashboardView: View {
                         Text("Here’s your financial overview").font(.subheadline).foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    if filterAccounts.count > 1 {
-                        Picker("Wallet Filter", selection: $selectedAccountID) {
-                            Text("All Wallets").tag("")
-                            ForEach(filterAccounts) { Text($0.name).tag($0.id) }
-                        }
-                        .pickerStyle(.menu)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                        .accessibilityIdentifier("dashboardAccountFilter")
-                    }
                     VStack(alignment: .leading, spacing: 14) {
                         HStack {
-                            Label(selectedAccount.map { "Monthly Spending · \($0.name)" } ?? "Monthly Spending", systemImage: "leaf.fill")
+                            Label("Monthly Spending", systemImage: "leaf.fill")
                                 .font(.headline).foregroundStyle(theme.accent)
                             Spacer()
                             if let spendingChange {
@@ -120,7 +96,6 @@ struct DashboardView: View {
                         quickAction("Expense", symbol: "arrow.up.right", color: .orange) { addingType = .expense }
                             .coachMarkTarget(.expenseButton)
                         quickAction("Income", symbol: "arrow.down.left", color: .green) { addingType = .income }
-                        if canTransfer { quickAction("Transfer", symbol: "arrow.left.arrow.right", color: .indigo) { transferring = true } }
                     }
 
                     HStack { metric("Today’s spending", currencyTransactions.filter { Calendar.current.isDateInToday($0.transactionDate) && $0.type == .expense && $0.transferID == nil }.reduce(0) { $0 + $1.amount }); metric("Net this month", month.income - month.expenses) }
@@ -178,27 +153,6 @@ struct DashboardView: View {
                         .accessibilityIdentifier("upcomingBillsSection")
                     }
 
-                    if !accounts.isEmpty {
-                        HStack { sectionHeader("Wallets & Accounts"); NavigationLink("See All") { AccountsView() }.font(.subheadline) }
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                            ForEach(accounts) { account in
-                                Button {
-                                    guard account.currencyCode == currencyCode else { return }
-                                    selectedAccountID = selectedAccountID == account.id ? "" : account.id
-                                } label: {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Image(systemName: account.type.symbol).font(.title3).foregroundStyle(theme.accent)
-                                    Text(account.name).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
-                                    Text(AppFormat.money(FinancialAccountStore.balance(for: account, transactions: transactions), currencyCode: account.currencyCode)).font(.headline).lineLimit(1).minimumScaleFactor(0.7)
-                                }.frame(width: 180, alignment: .leading).padding().background(.background, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-                                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(selectedAccountID == account.id ? theme.accent : .clear, lineWidth: 2))
-                                }.buttonStyle(.plain)
-                            }
-                            }
-                        }
-                    }
-
                     if !categoryBudgetProgress.isEmpty {
                         sectionHeader("Category Budgets")
                         VStack(spacing: 14) {
@@ -239,8 +193,6 @@ struct DashboardView: View {
                     }
                 }
                 .sheet(item: $addingType) { AddTransactionView(startingType: $0) }
-                .sheet(isPresented: $transferring) { TransferView() }
-                .onChange(of: accountsJSON) { _, _ in if selectedAccount == nil { selectedAccountID = "" } }
         }
     }
     private func quickAction(_ title: LocalizedStringKey, symbol: String, color: Color, action: @escaping () -> Void) -> some View {

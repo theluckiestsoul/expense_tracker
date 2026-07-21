@@ -7,7 +7,6 @@ struct AddTransactionView: View {
     @Environment(\.modelContext) private var context
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
-    @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     private let transaction: Transaction?
     private let isDuplicate: Bool
     @State private var type: TransactionType
@@ -18,7 +17,6 @@ struct AddTransactionView: View {
     @State private var date: Date
     @State private var merchant: String
     @State private var notes: String
-    @State private var accountID: String
     @State private var errorMessage: String?
     @State private var alertTitle = "Couldn’t Save"
     @State private var receiptItem: PhotosPickerItem?
@@ -36,7 +34,6 @@ struct AddTransactionView: View {
         _date = State(initialValue: transaction?.transactionDate ?? .now)
         _merchant = State(initialValue: transaction?.merchant ?? "")
         _notes = State(initialValue: transaction?.notes ?? "")
-        _accountID = State(initialValue: transaction?.accountID ?? "")
     }
 
     init(startingType: TransactionType) {
@@ -45,7 +42,7 @@ struct AddTransactionView: View {
         _amount = State(initialValue: "")
         _categoryID = State(initialValue: ExpenseCategory.cases(for: startingType)[0].rawValue)
         _payment = State(initialValue: .cash); _transactionCurrency = State(initialValue: CurrencyCatalog.defaultCode)
-        _date = State(initialValue: .now); _merchant = State(initialValue: ""); _notes = State(initialValue: ""); _accountID = State(initialValue: "")
+        _date = State(initialValue: .now); _merchant = State(initialValue: ""); _notes = State(initialValue: "")
     }
 
     init(copying source: Transaction) {
@@ -59,10 +56,7 @@ struct AddTransactionView: View {
         _date = State(initialValue: .now)
         _merchant = State(initialValue: source.merchant)
         _notes = State(initialValue: source.notes)
-        _accountID = State(initialValue: source.accountID ?? "")
     }
-
-    private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON).filter { !$0.isArchived } }
 
     var body: some View {
         NavigationStack {
@@ -83,14 +77,6 @@ struct AddTransactionView: View {
                     if isScanningReceipt { ProgressView().frame(maxWidth: .infinity) }
                 }
                 Section("Details") {
-                    if accounts.count > 1 {
-                        Picker("Wallet or Account", selection: $accountID) {
-                            Text("Not Assigned").tag("")
-                            ForEach(accounts) { account in Text("\(account.name) (\(account.currencyCode))").tag(account.id) }
-                        }.onChange(of: accountID) { _, value in
-                            if let account = accounts.first(where: { $0.id == value }) { transactionCurrency = account.currencyCode }
-                        }
-                    }
                     Picker("Category", selection: $categoryID) {
                         ForEach(categoryOptions(for: type)) { category in
                             Label(category.name, systemImage: category.symbol).tag(category.id)
@@ -98,11 +84,6 @@ struct AddTransactionView: View {
                     }
                     Picker("Payment Method", selection: $payment) { ForEach(PaymentMethod.allCases) { Text($0.displayName).tag($0) } }
                     Picker("Currency", selection: $transactionCurrency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }
-                        .onChange(of: transactionCurrency) { _, value in
-                            if FinancialAccountStore.validAssignment(accountID, currencyCode: value, in: accounts) == nil {
-                                accountID = ""
-                            }
-                        }
                     DatePicker("Date", selection: $date)
                     TextField("Merchant / description", text: $merchant).textInputAutocapitalization(.words)
                 }
@@ -113,13 +94,7 @@ struct AddTransactionView: View {
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveTransactionButton") } }
                 .alert(alertTitle, isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
                 .onChange(of: receiptItem) { _, item in if let item { scanReceipt(item) } }
-                .onAppear {
-                    if transaction == nil && !isDuplicate && accountID.isEmpty {
-                        accountID = accounts.first(where: { $0.isDefault && $0.currencyCode == currencyCode })?.id ?? ""
-                    }
-                    if let account = accounts.first(where: { $0.id == accountID }) { transactionCurrency = account.currencyCode }
-                    else if transaction == nil && !isDuplicate { transactionCurrency = currencyCode }
-                }
+                .onAppear { if transaction == nil && !isDuplicate { transactionCurrency = currencyCode } }
         }
     }
     private func save() {
@@ -131,11 +106,9 @@ struct AddTransactionView: View {
             transaction.paymentMethod = payment; transaction.currencyCode = transactionCurrency
             transaction.transactionDate = date; transaction.merchant = cleanMerchant
             transaction.notes = cleanNotes; transaction.updatedAt = .now
-            transaction.accountID = FinancialAccountStore.validAssignment(accountID, currencyCode: transactionCurrency, in: accounts)
         } else {
             let newTransaction = Transaction(amount: value, type: type, category: ExpenseCategory.cases(for: type)[0], paymentMethod: payment, currencyCode: transactionCurrency, transactionDate: date, merchant: cleanMerchant, notes: cleanNotes)
             newTransaction.categoryRaw = categoryID
-            newTransaction.accountID = FinancialAccountStore.validAssignment(accountID, currencyCode: transactionCurrency, in: accounts)
             context.insert(newTransaction)
         }
         do { try context.save(); dismiss() } catch { alertTitle = "Couldn’t Save"; errorMessage = error.localizedDescription }

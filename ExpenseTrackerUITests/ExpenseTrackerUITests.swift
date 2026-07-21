@@ -45,6 +45,7 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Add Transaction"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.textFields["amountField"].exists)
         XCTAssertTrue(app.buttons["scanReceipt"].exists)
+        XCTAssertFalse(app.staticTexts["Wallet or Account"].exists)
         XCTAssertFalse(app.buttons["saveTransactionButton"].isEnabled)
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 5))
@@ -67,6 +68,7 @@ final class ExpenseTrackerUITests: XCTestCase {
         app.launch()
 
         app.tabBars.buttons["Settings"].tap()
+        XCTAssertFalse(app.buttons["accountsLink"].exists)
         app.buttons["customCategoriesLink"].tap()
         app.buttons["addCustomCategory_expense"].tap()
         let name = app.textFields["customCategoryName"]
@@ -121,22 +123,6 @@ final class ExpenseTrackerUITests: XCTestCase {
         if !exportBackup.exists { app.swipeUp() }
         XCTAssertTrue(exportBackup.waitForExistence(timeout: 5))
         XCTAssertTrue(app.buttons["restoreCompleteBackup"].exists)
-    }
-
-    func testCreateFinancialAccount() {
-        let app = configuredApp()
-        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-financialAccountsJSON", "[]"]
-        app.launch()
-
-        app.tabBars.buttons["Settings"].tap()
-        app.buttons["accountsLink"].tap()
-        app.buttons["addAccount"].tap()
-        let name = app.textFields["accountName"]
-        XCTAssertTrue(name.waitForExistence(timeout: 5))
-        name.tap(); name.typeText("Savings")
-        app.buttons["saveAccount"].tap()
-        XCTAssertTrue(app.staticTexts["Savings"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["transferMoney"].exists)
     }
 
     func testCreateSavingsGoal() {

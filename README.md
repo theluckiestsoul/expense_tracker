@@ -4,7 +4,7 @@ A private, local-first iPhone money tracker built with SwiftUI, SwiftData, and S
 
 LedgerLeaf uses a leaf-led navigation identity and circular category markers to keep its interface visually distinct from generic expense trackers while retaining familiar iOS accessibility labels.
 
-The dashboard emphasizes monthly health, one-tap expense and income entry, compact metrics, horizontally scrolling wallet cards, and concise planning sections. A calendar-aware monthly forecast projects end-of-month spending and warns when the current pace may exceed the budget. Budget alerts highlight the 75%, 90%, and exceeded thresholds without interrupting the user. Dashboard and reports can be filtered by wallet while retaining the existing report-period controls. Settings separates preferences, planning, automation, backup, and legal tasks to reduce visual density.
+The dashboard emphasizes monthly health, one-tap expense and income entry, compact metrics, and concise planning sections. A calendar-aware monthly forecast projects end-of-month spending and warns when the current pace may exceed the budget. Budget alerts highlight the 75%, 90%, and exceeded thresholds without interrupting the user. Settings separates preferences, planning, automation, backup, and legal tasks to reduce visual density.
 
 LedgerLeaf uses a consistent leaf wordmark, a soft theme-aware background, elevated financial cards, high-contrast quick actions, and a familiar five-item tab menu while preserving native iOS navigation and accessibility behavior.
 
@@ -16,23 +16,17 @@ LedgerLeaf supports separate built-in and custom income/expense categories. Cust
 
 Recurring transactions can automatically record weekly, monthly, or yearly income and expenses such as salary, rent, and subscriptions. Schedules support custom categories, pause/resume, editing, missed-period catch-up, and duplicate-safe generation.
 
-The dashboard shows active recurring expenses due within the next 30 days, ordered by due date and filtered by the selected currency and wallet. Today, tomorrow, and overdue states are called out clearly.
+The dashboard shows active recurring expenses due within the next 30 days, ordered by due date and filtered by the selected currency. Today, tomorrow, and overdue states are called out clearly.
 
 Monthly category budgets are currency-specific and appear on the dashboard with progress and overspending indicators. Transaction search covers merchants, notes, categories, and payment methods, with additional category, payment-method, and date-range filters.
 
-Existing income and expenses can be duplicated from the transaction list using a leading swipe or long press. LedgerLeaf copies the details into a review form with today's date and always creates a separate transaction; linked account transfers cannot be duplicated.
+Existing income and expenses can be duplicated from the transaction list using a leading swipe or long press. LedgerLeaf copies the details into a review form with today's date and always creates a separate transaction.
 
 Receipt scanning uses Apple's photo picker and on-device Vision OCR to suggest the total, merchant, and date from a receipt image. Suggestions remain editable, and the selected image is neither uploaded nor stored.
 
 Reports support weekly, monthly, yearly, and all-time views with income-versus-expense cash-flow charts, net cash flow, savings rate, period-aware category breakdowns, and income/spending comparisons against the previous matching period.
 
 Optional bill reminders schedule private, on-device notifications one day before active recurring expenses. Notification access is requested only when the user enables Bill Reminders in Settings.
-
-Optional Wallets & Accounts represent where money is kept or owed, such as cash, a bank account, a credit card, or a digital wallet. LedgerLeaf handles the single default wallet automatically and shows account selection only after another one is created. Balances can use independent currencies, appear on the dashboard, and support transaction filtering.
-
-Same-currency account transfers update both balances using a linked debit and credit. Transfers are excluded from spending, income, budgets, savings rate, and reports, and deleting either side removes the complete transfer.
-
-Wallet/account assignment is optional. When used, it separates balances such as cash, bank, card, and digital wallet; LedgerLeaf prevents a transaction from being assigned to an account with a different currency and locks an account currency once transaction history exists.
 
 Savings goals track target and saved amounts in any supported currency, with an optional completion date. Goal progress appears on the dashboard and can be updated from Settings; all goal data remains on the device.
 
@@ -56,4 +50,4 @@ The interface automatically follows the user's supported iOS language. Current l
 
 Transactions retain their original ISO currency, while dashboard and report totals use the selected default currency. Data and preferences stay on device with SwiftData/AppStorage. CSV export uses the system share sheet. Settings includes a CSV import guide and a header-only template; CSV imports merge transactions and skip duplicates. The app does not track users or transmit personal data.
 
-Complete LedgerLeaf backups preserve transactions, linked transfers, wallets, custom categories, budgets, savings goals, recurring schedules, and core preferences in one versioned JSON file. Restore validates the full file and asks before replacing local data; biometric and notification permissions remain specific to each device.
+Complete LedgerLeaf backups preserve transactions, custom categories, budgets, savings goals, recurring schedules, and core preferences in one versioned JSON file. Legacy account metadata remains readable when restoring backups created by earlier versions. Restore validates the full file and asks before replacing local data; biometric and notification permissions remain specific to each device.

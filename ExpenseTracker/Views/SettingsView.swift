@@ -85,8 +85,6 @@ struct SettingsView: View {
                 Section("Plan & Organize") {
                     NavigationLink("Custom Categories") { CustomCategoriesView() }
                         .accessibilityIdentifier("customCategoriesLink")
-                    NavigationLink("Wallets & Accounts") { AccountsView() }
-                        .accessibilityIdentifier("accountsLink")
                     NavigationLink("Category Budgets") { CategoryBudgetsView() }
                         .accessibilityIdentifier("categoryBudgetsLink")
                     NavigationLink("Savings Goals") { SavingsGoalsView() }
@@ -110,7 +108,7 @@ struct SettingsView: View {
                     Button("Import Transactions (CSV)") { importing = true }
                     NavigationLink("CSV Import Guide") { CSVImportGuideView(downloadTemplate: { csvExportKind = .template; exporting = true }) }
                         .accessibilityIdentifier("csvImportGuide")
-                    Text("CSV imports add transactions only and skip duplicates. Complete Backup includes wallets, budgets, goals, schedules, and preferences.")
+                    Text("CSV imports add transactions only and skip duplicates. Complete Backup includes budgets, goals, schedules, and preferences.")
                         .font(.footnote).foregroundStyle(.secondary)
                     Button("Delete All Transactions", role: .destructive) { confirmingDeleteAll = true }.disabled(transactions.isEmpty)
                 }
@@ -158,7 +156,7 @@ struct SettingsView: View {
                 .confirmationDialog("Replace all LedgerLeaf data?", isPresented: Binding(get: { pendingBackup != nil }, set: { if !$0 { pendingBackup = nil } }), titleVisibility: .visible) {
                     Button("Restore Backup", role: .destructive) { restorePendingBackup() }
                     Button("Cancel", role: .cancel) { pendingBackup = nil }
-                } message: { Text("This replaces transactions, wallets, budgets, goals, schedules, and preferences on this device. This action can’t be undone.") }
+                } message: { Text("This replaces transactions, budgets, goals, schedules, and preferences on this device. This action can’t be undone.") }
                 .alert(statusTitle, isPresented: Binding(get: { statusMessage != nil }, set: { if !$0 { statusMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(statusMessage ?? "Unknown error") }
         }
     }
@@ -172,13 +170,12 @@ struct SettingsView: View {
                     $0.type.rawValue, category.isCustom ? category.name : $0.categoryRaw, $0.paymentMethod.rawValue,
                     $0.transactionDate.ISO8601Format(), $0.merchant, $0.notes,
                     category.symbol, category.colorName,
-                    $0.transferID?.uuidString ?? "",
                     $0.createdAt.ISO8601Format()
                 ]
             }
-        return DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders] + rows)
+        return DomainLogic.csv(rows: [DomainLogic.previousTransactionCSVHeaders] + rows)
     }
-    private var csvTemplate: String { DomainLogic.csv(rows: [DomainLogic.transactionCSVHeaders]) }
+    private var csvTemplate: String { DomainLogic.csv(rows: [DomainLogic.previousTransactionCSVHeaders]) }
     private var csvExportText: String { csvExportKind == .template ? csvTemplate : csv }
     private var csvExportFilename: String { csvExportKind == .template ? "ledgerleaf-import-template.csv" : "ledgerleaf-transactions.csv" }
     private var completeBackup: LedgerLeafBackup {
@@ -350,16 +347,16 @@ private struct CSVImportGuideView: View {
                 LabeledContent("Currency", value: "Three-letter code, for example USD or INR")
                 LabeledContent("Type", value: "expense or income")
                 LabeledContent("Dates", value: "ISO 8601, for example 2026-07-19T10:30:00Z")
-                LabeledContent("Optional", value: "Merchant, Notes, Transfer ID")
+                LabeledContent("Optional", value: "Merchant and Notes")
             }
             Section("Columns (in this order)") {
-                ForEach(Array(DomainLogic.transactionCSVHeaders.enumerated()), id: \.offset) { index, header in
+                ForEach(Array(DomainLogic.previousTransactionCSVHeaders.enumerated()), id: \.offset) { index, header in
                     LabeledContent("\(index + 1)", value: header)
                 }
             }
             Section("Important") {
                 Text("Category and Payment Method values are safest when copied from a LedgerLeaf export. Custom categories also require a supported Category Symbol and Category Color.")
-                Text("CSV does not restore wallets or assign imported rows to a wallet. Use Complete Backup when moving all LedgerLeaf data to another device.")
+                Text("CSV restores transactions only. Use Complete Backup when moving all LedgerLeaf data and settings to another device.")
             }
         }
         .navigationTitle("CSV Import Guide")

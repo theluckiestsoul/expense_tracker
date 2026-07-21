@@ -66,7 +66,6 @@ private struct RecurringTransactionEditor: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("currencyCode") private var defaultCurrency = CurrencyCatalog.defaultCode
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
-    @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     let existing: RecurringTransaction?
     let onSave: (RecurringTransaction) -> Void
     @State private var name: String
@@ -80,7 +79,6 @@ private struct RecurringTransactionEditor: View {
     @State private var frequency: RecurrenceFrequency
     @State private var nextDate: Date
     @State private var errorMessage: String?
-    @State private var accountID: String
 
     init(existing: RecurringTransaction?, onSave: @escaping (RecurringTransaction) -> Void) {
         self.existing = existing; self.onSave = onSave
@@ -94,14 +92,11 @@ private struct RecurringTransactionEditor: View {
         _notes = State(initialValue: existing?.notes ?? "")
         _frequency = State(initialValue: existing?.frequency ?? .monthly)
         _nextDate = State(initialValue: existing?.nextDate ?? Calendar.current.startOfDay(for: .now))
-        _accountID = State(initialValue: existing?.accountID ?? "")
     }
 
     private var categoryOptions: [CategoryPresentation] {
         CustomCategoryCatalog.options(for: type, custom: CustomCategoryCatalog.decode(customCategoriesJSON), includeArchivedID: existing?.categoryRaw)
     }
-    private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON).filter { !$0.isArchived } }
-
     var body: some View {
         NavigationStack {
             Form {
@@ -113,21 +108,9 @@ private struct RecurringTransactionEditor: View {
                     Text(currency).foregroundStyle(.secondary)
                     TextField("0.00", text: $amount).keyboardType(.decimalPad).accessibilityIdentifier("recurringAmount")
                 }
-                if accounts.count > 1 {
-                    Picker("Wallet or Account", selection: $accountID) {
-                        Text("Not Assigned").tag("")
-                        ForEach(accounts) { Text("\($0.name) (\($0.currencyCode))").tag($0.id) }
-                    }
-                        .onChange(of: accountID) { _, value in if let account = accounts.first(where: { $0.id == value }) { currency = account.currencyCode } }
-                }
                 Picker("Category", selection: $categoryRaw) { ForEach(categoryOptions) { Label($0.name, systemImage: $0.symbol).tag($0.id) } }
                 Picker("Payment Method", selection: $payment) { ForEach(PaymentMethod.allCases) { Text($0.displayName).tag($0) } }
                 Picker("Currency", selection: $currency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }
-                    .onChange(of: currency) { _, value in
-                        if FinancialAccountStore.validAssignment(accountID, currencyCode: value, in: accounts) == nil {
-                            accountID = ""
-                        }
-                    }
                 Picker("Repeats", selection: $frequency) { ForEach(RecurrenceFrequency.allCases) { Text($0.title).tag($0) } }
                 DatePicker("Next Date", selection: $nextDate, displayedComponents: .date)
                 TextField("Merchant / description", text: $merchant)
@@ -135,13 +118,7 @@ private struct RecurringTransactionEditor: View {
             }
             .navigationTitle(existing == nil ? "New Recurring Transaction" : "Edit Recurring Transaction")
             .navigationBarTitleDisplayMode(.inline)
-            .onAppear {
-                if existing == nil && accountID.isEmpty {
-                    accountID = accounts.first(where: { $0.isDefault && $0.currencyCode == defaultCurrency })?.id ?? ""
-                }
-                if let account = accounts.first(where: { $0.id == accountID }) { currency = account.currencyCode }
-                else if existing == nil { currency = defaultCurrency }
-            }
+            .onAppear { if existing == nil { currency = defaultCurrency } }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveRecurringTransaction") }
@@ -152,7 +129,7 @@ private struct RecurringTransactionEditor: View {
 
     private func save() {
         guard let value = DomainLogic.parseAmount(amount) else { errorMessage = "Enter a valid amount greater than zero."; return }
-        onSave(RecurringTransaction(id: existing?.id ?? UUID(), name: DomainLogic.sanitizedText(name, maximumLength: 50), amount: value, type: type, categoryRaw: categoryRaw, paymentMethod: payment, currencyCode: currency, merchant: DomainLogic.sanitizedText(merchant, maximumLength: 80), notes: DomainLogic.sanitizedText(notes, maximumLength: 500), frequency: frequency, nextDate: Calendar.current.startOfDay(for: nextDate), isActive: existing?.isActive ?? true, accountID: FinancialAccountStore.validAssignment(accountID, currencyCode: currency, in: accounts)))
+        onSave(RecurringTransaction(id: existing?.id ?? UUID(), name: DomainLogic.sanitizedText(name, maximumLength: 50), amount: value, type: type, categoryRaw: categoryRaw, paymentMethod: payment, currencyCode: currency, merchant: DomainLogic.sanitizedText(merchant, maximumLength: 80), notes: DomainLogic.sanitizedText(notes, maximumLength: 500), frequency: frequency, nextDate: Calendar.current.startOfDay(for: nextDate), isActive: existing?.isActive ?? true, accountID: existing?.accountID))
         dismiss()
     }
 }

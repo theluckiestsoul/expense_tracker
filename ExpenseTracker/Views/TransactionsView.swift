@@ -23,12 +23,10 @@ struct TransactionsView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \Transaction.transactionDate, order: .reverse) private var all: [Transaction]
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
-    @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     @State private var filter: TransactionType?
     @State private var search = ""
     @State private var categoryFilter = ""
     @State private var paymentFilter = ""
-    @State private var accountFilter = ""
     @State private var dateFilter = TransactionDateFilter.all
     @State private var showingFilters = false
     @State private var editing: Transaction?
@@ -36,12 +34,11 @@ struct TransactionsView: View {
     @State private var pendingDeletion: [Transaction] = []
     @State private var errorMessage: String?
     private var customCategories: [CustomCategory] { CustomCategoryCatalog.decode(customCategoriesJSON) }
-    private var accounts: [FinancialAccount] { FinancialAccountStore.decode(accountsJSON) }
     private var categoryOptions: [CategoryPresentation] {
         let types = filter.map { [$0] } ?? TransactionType.allCases
         return types.flatMap { CustomCategoryCatalog.options(for: $0, custom: customCategories) }
     }
-    private var activeFilterCount: Int { (categoryFilter.isEmpty ? 0 : 1) + (paymentFilter.isEmpty ? 0 : 1) + (accountFilter.isEmpty ? 0 : 1) + (dateFilter == .all ? 0 : 1) }
+    private var activeFilterCount: Int { (categoryFilter.isEmpty ? 0 : 1) + (paymentFilter.isEmpty ? 0 : 1) + (dateFilter == .all ? 0 : 1) }
     private var shown: [Transaction] {
         let term = search.trimmingCharacters(in: .whitespacesAndNewlines)
         return all.filter { transaction in
@@ -53,7 +50,6 @@ struct TransactionsView: View {
             return (filter == nil || transaction.type == filter)
                 && (categoryFilter.isEmpty || transaction.categoryRaw == categoryFilter)
                 && (paymentFilter.isEmpty || transaction.paymentMethodRaw == paymentFilter)
-                && (accountFilter.isEmpty || transaction.accountID == accountFilter || (transaction.accountID == nil && accounts.first(where: \.isDefault)?.id == accountFilter))
                 && dateFilter.includes(transaction.transactionDate)
                 && matchesSearch
         }
@@ -105,10 +101,6 @@ struct TransactionsView: View {
                                 Text("All Payment Methods").tag("")
                                 ForEach(PaymentMethod.allCases) { Text($0.displayName).tag($0.rawValue) }
                             }
-                            Picker("Account", selection: $accountFilter) {
-                                Text("All Accounts").tag("")
-                                ForEach(accounts.filter { !$0.isArchived }) { Text($0.name).tag($0.id) }
-                            }
                             if activeFilterCount > 0 { Button("Clear Filters", role: .destructive) { clearFilters() } }
                         }
                         .navigationTitle("Filter Transactions").navigationBarTitleDisplayMode(.inline)
@@ -128,5 +120,5 @@ struct TransactionsView: View {
         Dictionary((pendingDeletion + linked).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first }).values.forEach(context.delete)
         do { try context.save(); pendingDeletion = [] } catch { context.rollback(); errorMessage = error.localizedDescription; pendingDeletion = [] }
     }
-    private func clearFilters() { categoryFilter = ""; paymentFilter = ""; accountFilter = ""; dateFilter = .all }
+    private func clearFilters() { categoryFilter = ""; paymentFilter = ""; dateFilter = .all }
 }

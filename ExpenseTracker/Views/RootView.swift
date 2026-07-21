@@ -6,7 +6,6 @@ struct RootView: View {
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(RecurringTransactionStore.storageKey) private var recurringTransactionsJSON = ""
     @AppStorage(BillReminderService.enabledKey) private var billRemindersEnabled = false
-    @AppStorage(FinancialAccountStore.storageKey) private var accountsJSON = ""
     @AppStorage(AppTheme.storageKey) private var themeRaw = AppTheme.system.rawValue
     @AppStorage(OnboardingCoachMark.completionKey) private var hasCompletedOnboarding = false
     @State private var selection = 0
@@ -43,8 +42,6 @@ struct RootView: View {
         }
         .task {
             try? LegacyDataMigrator.assignMissingCurrencies(in: context, currencyCode: currencyCode)
-            let accounts = FinancialAccountStore.ensuringDefault(in: FinancialAccountStore.decode(accountsJSON), currencyCode: currencyCode)
-            if accounts != FinancialAccountStore.decode(accountsJSON) { accountsJSON = FinancialAccountStore.encode(accounts) }
             processSchedules()
             if billRemindersEnabled { await BillReminderService.schedule(schedulesJSON: recurringTransactionsJSON) }
         }
