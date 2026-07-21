@@ -3,6 +3,27 @@ import SwiftData
 @testable import ExpenseTracker
 
 final class ExpenseTrackerTests: XCTestCase {
+    func testMerchantRulesNormalizeMatchUpdateAndLimit() {
+        let cafe = MerchantRule(merchantName: "  Café   Central  ", type: .expense,
+                                categoryID: ExpenseCategory.food.rawValue, paymentMethod: .card,
+                                updatedAt: Date(timeIntervalSince1970: 10))
+        XCTAssertEqual(cafe.merchantKey, "cafe central")
+        XCTAssertEqual(MerchantRuleStore.matching("CAFE CENTRAL", in: [cafe]), cafe)
+
+        let replacement = MerchantRule(merchantName: "Cafe Central", type: .expense,
+                                       categoryID: ExpenseCategory.travel.rawValue, paymentMethod: .mobileWallet,
+                                       updatedAt: Date(timeIntervalSince1970: 20))
+        let updated = MerchantRuleStore.upserting(replacement, in: [cafe])
+        XCTAssertEqual(updated.count, 1)
+        XCTAssertEqual(updated[0].categoryID, ExpenseCategory.travel.rawValue)
+        XCTAssertEqual(MerchantRuleStore.decode(MerchantRuleStore.encode(updated)), updated)
+
+        let another = MerchantRule(merchantName: "Market", type: .expense,
+                                   categoryID: ExpenseCategory.shopping.rawValue, paymentMethod: .cash)
+        XCTAssertEqual(MerchantRuleStore.upserting(another, in: updated, limit: 1), [another])
+        XCTAssertNil(MerchantRuleStore.matching("", in: updated))
+    }
+
     func testReceiptTextParserFindsMerchantTotalAndDate() {
         let result = ReceiptTextParser.parse(lines: ["GREEN LEAF CAFE", "GSTIN 12345", "12/07/2026", "Subtotal 1,100.00", "Tax 55.00", "GRAND TOTAL INR 1,155.00"], locale: Locale(identifier: "en_IN"))
         XCTAssertEqual(result.merchant, "GREEN LEAF CAFE")

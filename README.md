@@ -24,6 +24,8 @@ Existing income and expenses can be duplicated from the transaction list using a
 
 Receipt scanning uses Apple's photo picker and on-device Vision OCR to suggest the total, merchant, and date from a receipt image. Suggestions remain editable, and the selected image is neither uploaded nor stored.
 
+Optional Smart Merchant Rules remember a merchant’s transaction type, category, and payment method. Matching happens on-device, suggestions remain editable before saving, and learned rules can be reviewed or deleted from Settings.
+
 Reports support weekly, monthly, yearly, and all-time views with income-versus-expense cash-flow charts, net cash flow, savings rate, period-aware category breakdowns, and income/spending comparisons against the previous matching period.
 
 Optional bill reminders schedule private, on-device notifications one day before active recurring expenses. Notification access is requested only when the user enables Bill Reminders in Settings.

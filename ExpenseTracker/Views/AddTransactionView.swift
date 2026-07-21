@@ -7,6 +7,7 @@ struct AddTransactionView: View {
     @Environment(\.modelContext) private var context
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
+    @AppStorage(MerchantRuleStore.storageKey) private var merchantRulesJSON = ""
     private let transaction: Transaction?
     private let isDuplicate: Bool
     @State private var type: TransactionType
@@ -21,6 +22,8 @@ struct AddTransactionView: View {
     @State private var alertTitle = "Couldn’t Save"
     @State private var receiptItem: PhotosPickerItem?
     @State private var isScanningReceipt = false
+    @State private var rememberMerchant = false
+    @State private var appliedRuleKey = ""
     private let receiptScanner = ReceiptScanner()
 
     init(transaction: Transaction? = nil) {
@@ -61,8 +64,13 @@ struct AddTransactionView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Picker("Type", selection: $type) { ForEach(TransactionType.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
-                    .onChange(of: type) { _, newType in categoryID = categoryOptions(for: newType).first?.id ?? ExpenseCategory.cases(for: newType)[0].rawValue }
+                Picker("Type", selection: Binding(
+                    get: { type },
+                    set: { newType in
+                        type = newType
+                        categoryID = categoryOptions(for: newType).first?.id ?? ExpenseCategory.cases(for: newType)[0].rawValue
+                    }
+                )) { ForEach(TransactionType.allCases) { Text($0.title).tag($0) } }.pickerStyle(.segmented)
                 Section("Amount") {
                     HStack {
                         Text(transactionCurrency).font(.headline).foregroundStyle(.secondary)
@@ -86,9 +94,19 @@ struct AddTransactionView: View {
                     Picker("Currency", selection: $transactionCurrency) { ForEach(CurrencyCatalog.all) { Text($0.label).tag($0.code) } }
                     DatePicker("Date", selection: $date)
                     TextField("Merchant / description", text: $merchant).textInputAutocapitalization(.words)
+                        .accessibilityIdentifier("merchantField")
+                        .onChange(of: merchant) { _, value in applyRule(for: value) }
                 }
                 Section("Optional") {
                     TextField("Notes (optional)", text: $notes, axis: .vertical).lineLimit(2...5)
+                    if !MerchantRuleStore.normalizedKey(merchant).isEmpty {
+                        Toggle("Remember choices for this merchant", isOn: $rememberMerchant)
+                            .accessibilityIdentifier("rememberMerchantRule")
+                        if !appliedRuleKey.isEmpty {
+                            Label("Saved merchant rule applied", systemImage: "wand.and.stars")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
                 }
             }.navigationTitle(isDuplicate ? "Duplicate Transaction" : (transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction"))).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveTransactionButton") } }
@@ -111,7 +129,14 @@ struct AddTransactionView: View {
             newTransaction.categoryRaw = categoryID
             context.insert(newTransaction)
         }
-        do { try context.save(); dismiss() } catch { alertTitle = "Couldn’t Save"; errorMessage = error.localizedDescription }
+        do {
+            try context.save()
+            if rememberMerchant, !cleanMerchant.isEmpty {
+                let rule = MerchantRule(merchantName: cleanMerchant, type: type, categoryID: categoryID, paymentMethod: payment)
+                merchantRulesJSON = MerchantRuleStore.encode(MerchantRuleStore.upserting(rule, in: MerchantRuleStore.decode(merchantRulesJSON)))
+            }
+            dismiss()
+        } catch { alertTitle = "Couldn’t Save"; errorMessage = error.localizedDescription }
     }
 
     private func scanReceipt(_ item: PhotosPickerItem) {
@@ -130,5 +155,24 @@ struct AddTransactionView: View {
 
     private func categoryOptions(for type: TransactionType) -> [CategoryPresentation] {
         CustomCategoryCatalog.options(for: type, custom: CustomCategoryCatalog.decode(customCategoriesJSON), includeArchivedID: categoryID)
+    }
+
+    private func applyRule(for merchant: String) {
+        guard transaction == nil, !isDuplicate else { return }
+        let merchantKey = MerchantRuleStore.normalizedKey(merchant)
+        guard let rule = MerchantRuleStore.matching(merchant, in: MerchantRuleStore.decode(merchantRulesJSON)) else {
+            if !appliedRuleKey.isEmpty, merchantKey != appliedRuleKey {
+                appliedRuleKey = ""
+                rememberMerchant = false
+            }
+            return
+        }
+        guard rule.merchantKey != appliedRuleKey else { return }
+        type = rule.type
+        let options = categoryOptions(for: rule.type)
+        categoryID = options.contains(where: { $0.id == rule.categoryID }) ? rule.categoryID : (options.first?.id ?? ExpenseCategory.cases(for: rule.type)[0].rawValue)
+        payment = rule.paymentMethod
+        rememberMerchant = true
+        appliedRuleKey = rule.merchantKey
     }
 }

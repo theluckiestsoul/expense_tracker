@@ -46,6 +46,9 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.textFields["amountField"].exists)
         XCTAssertTrue(app.buttons["scanReceipt"].exists)
         XCTAssertFalse(app.staticTexts["Wallet or Account"].exists)
+        let merchant = app.textFields["merchantField"]
+        merchant.tap(); merchant.typeText("Example Cafe")
+        XCTAssertTrue(app.switches["rememberMerchantRule"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.buttons["saveTransactionButton"].isEnabled)
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 5))
@@ -85,6 +88,7 @@ final class ExpenseTrackerUITests: XCTestCase {
         app.launch()
 
         app.tabBars.buttons["Settings"].tap()
+        XCTAssertTrue(app.buttons["merchantRulesLink"].exists)
         app.buttons["recurringTransactionsLink"].tap()
         app.buttons["addRecurringTransaction"].tap()
         let name = app.textFields["recurringName"]
