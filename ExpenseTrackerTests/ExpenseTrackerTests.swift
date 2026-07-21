@@ -300,6 +300,27 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertNil(ReportPeriod.all.interval(now: february1, calendar: calendar))
     }
 
+    func testSpendingInsightsFindCategoryIncreasesAndUnusualExpenses() {
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        func expense(_ amount: Double, category: ExpenseCategory, days: Int, merchant: String = "Shop") -> Transaction {
+            Transaction(amount: amount, type: .expense, category: category, paymentMethod: .card,
+                        currencyCode: "USD", transactionDate: Calendar.current.date(byAdding: .day, value: days, to: base)!, merchant: merchant)
+        }
+        let previous = [expense(100, category: .food, days: -30), expense(200, category: .travel, days: -30)]
+        let current = [expense(175, category: .food, days: 0), expense(220, category: .travel, days: 0)]
+        let increases = ReportCalculator.categoryIncreases(current: current, previous: previous)
+        XCTAssertEqual(increases.map(\.categoryID), [ExpenseCategory.food.rawValue, ExpenseCategory.travel.rawValue])
+        XCTAssertEqual(increases[0].increase, 75)
+        XCTAssertEqual(increases[0].percentageChange, 0.75)
+
+        let history = [expense(10, category: .food, days: -4), expense(12, category: .food, days: -3),
+                       expense(14, category: .food, days: -2), expense(18, category: .travel, days: -1)]
+        let unusual = expense(40, category: .food, days: 0, merchant: "Special Dinner")
+        let ordinary = expense(20, category: .food, days: 0)
+        XCTAssertEqual(ReportCalculator.unusualExpenses(candidates: [ordinary, unusual], history: history).map(\.id), [unusual.id])
+        XCTAssertTrue(ReportCalculator.unusualExpenses(candidates: [unusual], history: Array(history.prefix(2))).isEmpty)
+    }
+
     func testBillRemindersIncludeOnlyFutureActiveExpenses() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

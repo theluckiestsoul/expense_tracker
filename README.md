@@ -28,6 +28,8 @@ Optional Smart Merchant Rules remember a merchant’s transaction type, category
 
 Transaction tags add flexible labels such as work, tax, vacation, or reimbursable. Tags appear in transaction rows, participate in search and filters, and are preserved in CSV exports and complete backups.
 
+On-device Spending Insights highlight the category with the largest increase from the previous period and flag unusually large expenses against the user’s own category history. Tapping an unusual expense opens it for review or correction.
+
 Reports support weekly, monthly, yearly, and all-time views with income-versus-expense cash-flow charts, net cash flow, savings rate, period-aware category breakdowns, and income/spending comparisons against the previous matching period.
 
 Optional bill reminders schedule private, on-device notifications one day before active recurring expenses. Notification access is requested only when the user enables Bill Reminders in Settings.

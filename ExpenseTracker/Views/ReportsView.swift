@@ -10,6 +10,7 @@ struct ReportsView: View {
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @State private var selectedType: TransactionType = .expense
     @State private var period: ReportPeriod = .month
+    @State private var insightTransaction: Transaction?
 
     private var eligibleTransactions: [Transaction] {
         transactions.filter { $0.transferID == nil && ($0.currencyCode ?? currencyCode) == currencyCode }
@@ -30,6 +31,12 @@ struct ReportsView: View {
     }
     private var cashFlow: [CashFlowPoint] { ReportCalculator.cashFlow(transactions: periodTransactions, period: period) }
     private var savingsRate: Double? { ReportCalculator.savingsRate(income: periodTransactions.income, expenses: periodTransactions.expenses) }
+    private var largestCategoryIncrease: CategorySpendingChange? {
+        ReportCalculator.categoryIncreases(current: periodTransactions, previous: previousTransactions).first
+    }
+    private var unusualExpenses: [Transaction] {
+        Array(ReportCalculator.unusualExpenses(candidates: periodTransactions, history: eligibleTransactions).prefix(3))
+    }
 
     var body: some View {
         NavigationStack {
@@ -61,6 +68,8 @@ struct ReportsView: View {
                         }
                         .accessibilityIdentifier("reportPeriodComparison")
                     }
+
+                    spendingInsights
 
                     Text("Cash Flow").font(.headline)
                     if cashFlow.isEmpty {
@@ -98,7 +107,52 @@ struct ReportsView: View {
                     }
                 }.padding()
             }.navigationTitle("Reports")
+                .sheet(item: $insightTransaction) { AddTransactionView(transaction: $0) }
         }
+    }
+
+    private var spendingInsights: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Spending Insights").font(.headline)
+            if period == .all {
+                Label("Choose Week, Month, or Year to compare spending patterns.", systemImage: "lightbulb")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            } else if largestCategoryIncrease == nil && unusualExpenses.isEmpty {
+                Label("No notable spending changes yet", systemImage: "checkmark.circle")
+                    .font(.subheadline).foregroundStyle(.secondary)
+            } else {
+                if let change = largestCategoryIncrease {
+                    let category = CustomCategoryCatalog.presentation(for: change.categoryID, type: .expense, custom: customCategories)
+                    HStack(alignment: .top, spacing: 12) {
+                        Image(systemName: "chart.line.uptrend.xyaxis").foregroundStyle(.orange)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("\(category.name) increased by \(AppFormat.money(change.increase, currencyCode: currencyCode))")
+                                .font(.subheadline).fontWeight(.semibold)
+                            Text("\(change.percentageChange.formatted(.percent.precision(.fractionLength(0)))) more than the previous \(period.title.lowercased()).")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                ForEach(unusualExpenses) { transaction in
+                    Button { insightTransaction = transaction } label: {
+                        HStack(alignment: .top, spacing: 12) {
+                            Image(systemName: "exclamationmark.magnifyingglass").foregroundStyle(.orange)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Unusual \(transaction.categoryPresentation(customCategories: customCategories).name) expense")
+                                    .font(.subheadline).fontWeight(.semibold).foregroundStyle(.primary)
+                                Text("\(transaction.merchant.isEmpty ? "Transaction" : transaction.merchant) · \(AppFormat.money(transaction.amount, currencyCode: currencyCode))")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                        }
+                    }.buttonStyle(.plain)
+                }
+            }
+        }
+        .padding()
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .accessibilityIdentifier("spendingInsights")
     }
 
     private var rateCard: some View {

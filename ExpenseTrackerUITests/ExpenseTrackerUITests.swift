@@ -181,6 +181,7 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Cash Flow"].exists)
         XCTAssertTrue(app.staticTexts["Savings Rate"].exists)
         XCTAssertTrue(app.staticTexts["Compared with Previous Month"].exists)
+        XCTAssertTrue(app.staticTexts["Spending Insights"].exists)
     }
 
     func testPersianLocalization() {

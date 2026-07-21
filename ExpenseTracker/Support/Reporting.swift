@@ -43,6 +43,14 @@ struct CashFlowPoint: Identifiable, Equatable {
     var id: String { "\(date.timeIntervalSinceReferenceDate)-\(type.rawValue)" }
 }
 
+struct CategorySpendingChange: Equatable {
+    let categoryID: String
+    let currentAmount: Double
+    let previousAmount: Double
+    var increase: Double { currentAmount - previousAmount }
+    var percentageChange: Double { increase / previousAmount }
+}
+
 enum ReportCalculator {
     static func percentageChange(current: Double, previous: Double) -> Double? {
         guard previous > 0, current.isFinite, previous.isFinite else { return nil }
@@ -52,6 +60,36 @@ enum ReportCalculator {
     static func savingsRate(income: Double, expenses: Double) -> Double? {
         guard income > 0 else { return nil }
         return (income - expenses) / income
+    }
+
+    static func categoryIncreases(current: [Transaction], previous: [Transaction]) -> [CategorySpendingChange] {
+        func totals(_ transactions: [Transaction]) -> [String: Double] {
+            Dictionary(grouping: transactions.filter { $0.type == .expense && $0.transferID == nil }, by: \.categoryRaw)
+                .mapValues { $0.reduce(0) { $0 + $1.amount } }
+        }
+        let currentTotals = totals(current)
+        let previousTotals = totals(previous)
+        return currentTotals.compactMap { categoryID, amount in
+            guard let oldAmount = previousTotals[categoryID], oldAmount > 0, amount > oldAmount else { return nil }
+            return CategorySpendingChange(categoryID: categoryID, currentAmount: amount, previousAmount: oldAmount)
+        }.sorted {
+            if $0.increase == $1.increase { return $0.categoryID < $1.categoryID }
+            return $0.increase > $1.increase
+        }
+    }
+
+    static func unusualExpenses(candidates: [Transaction], history: [Transaction], minimumSamples: Int = 3) -> [Transaction] {
+        candidates.filter { candidate in
+            guard candidate.type == .expense, candidate.transferID == nil else { return false }
+            let amounts = history.filter {
+                $0.id != candidate.id && $0.type == .expense && $0.transferID == nil &&
+                $0.categoryRaw == candidate.categoryRaw && $0.transactionDate < candidate.transactionDate
+            }.map(\.amount).sorted()
+            guard amounts.count >= minimumSamples else { return false }
+            let middle = amounts.count / 2
+            let median = amounts.count.isMultiple(of: 2) ? (amounts[middle - 1] + amounts[middle]) / 2 : amounts[middle]
+            return median > 0 && candidate.amount >= median * 2
+        }.sorted { $0.amount > $1.amount }
     }
 
     static func cashFlow(transactions: [Transaction], period: ReportPeriod, now: Date = .now, calendar: Calendar = .current) -> [CashFlowPoint] {
