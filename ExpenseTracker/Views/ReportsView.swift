@@ -37,6 +37,9 @@ struct ReportsView: View {
     private var unusualExpenses: [Transaction] {
         Array(ReportCalculator.unusualExpenses(candidates: periodTransactions, history: eligibleTransactions).prefix(3))
     }
+    private var merchantSpending: [MerchantSpending] {
+        Array(ReportCalculator.merchantSpending(transactions: periodTransactions).prefix(5))
+    }
 
     var body: some View {
         NavigationStack {
@@ -71,6 +74,16 @@ struct ReportsView: View {
 
                     spendingInsights
 
+                    NavigationLink {
+                        SpendingCalendarView()
+                    } label: {
+                        Label("Open Spending Calendar", systemImage: "calendar")
+                            .frame(maxWidth: .infinity, alignment: .leading).padding()
+                            .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("spendingCalendarLink")
+
                     Text("Cash Flow").font(.headline)
                     if cashFlow.isEmpty {
                         ContentUnavailableView("No cash flow", systemImage: "chart.xyaxis.line", description: Text("Add income or expenses for this period."))
@@ -101,6 +114,21 @@ struct ReportsView: View {
                     Text("Top Categories").font(.headline)
                     ForEach(categories) { item in
                         HStack { CategoryIcon(category: item.category); Text(item.category.name); Spacer(); Text(AppFormat.money(item.amount, currencyCode: currencyCode)).fontWeight(.semibold) }
+                    }
+                    if selectedType == .expense && !merchantSpending.isEmpty {
+                        Text("Top Merchants").font(.headline)
+                        ForEach(merchantSpending) { merchant in
+                            HStack {
+                                Image(systemName: "storefront.fill").foregroundStyle(.orange).frame(width: 32)
+                                VStack(alignment: .leading) {
+                                    Text(merchant.merchantName)
+                                    Text("\(merchant.transactionCount) transaction\(merchant.transactionCount == 1 ? "" : "s")")
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text(AppFormat.money(merchant.amount, currencyCode: currencyCode)).fontWeight(.semibold)
+                            }
+                        }
                     }
                     if transactions.contains(where: { ($0.currencyCode ?? currencyCode) != currencyCode }) {
                         Label("Reports include \(currencyCode) transactions only.", systemImage: "info.circle").font(.footnote).foregroundStyle(.secondary)

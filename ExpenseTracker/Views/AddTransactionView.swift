@@ -5,11 +5,14 @@ import PhotosUI
 struct AddTransactionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Query private var existingTransactions: [Transaction]
     @AppStorage("currencyCode") private var currencyCode = CurrencyCatalog.defaultCode
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @AppStorage(MerchantRuleStore.storageKey) private var merchantRulesJSON = ""
+    @AppStorage(TransactionTemplateStore.storageKey) private var templatesJSON = ""
     private let transaction: Transaction?
     private let isDuplicate: Bool
+    private let isTemplate: Bool
     @State private var type: TransactionType
     @State private var amount: String
     @State private var categoryID: String
@@ -25,11 +28,14 @@ struct AddTransactionView: View {
     @State private var isScanningReceipt = false
     @State private var rememberMerchant = false
     @State private var appliedRuleKey = ""
+    @State private var saveAsTemplate = false
+    @State private var templateName = ""
     private let receiptScanner = ReceiptScanner()
 
     init(transaction: Transaction? = nil) {
         self.transaction = transaction
         self.isDuplicate = false
+        self.isTemplate = false
         _type = State(initialValue: transaction?.type ?? .expense)
         _amount = State(initialValue: transaction.map { String(format: "%.2f", $0.amount) } ?? "")
         _categoryID = State(initialValue: transaction?.categoryRaw ?? ExpenseCategory.food.rawValue)
@@ -42,7 +48,7 @@ struct AddTransactionView: View {
     }
 
     init(startingType: TransactionType) {
-        self.transaction = nil; self.isDuplicate = false
+        self.transaction = nil; self.isDuplicate = false; self.isTemplate = false
         _type = State(initialValue: startingType)
         _amount = State(initialValue: "")
         _categoryID = State(initialValue: ExpenseCategory.cases(for: startingType)[0].rawValue)
@@ -54,6 +60,7 @@ struct AddTransactionView: View {
     init(copying source: Transaction) {
         self.transaction = nil
         self.isDuplicate = true
+        self.isTemplate = false
         _type = State(initialValue: source.type)
         _amount = State(initialValue: String(format: "%.2f", source.amount))
         _categoryID = State(initialValue: source.categoryRaw)
@@ -63,6 +70,21 @@ struct AddTransactionView: View {
         _merchant = State(initialValue: source.merchant)
         _notes = State(initialValue: source.notes)
         _tagsText = State(initialValue: source.tags.joined(separator: ", "))
+    }
+
+    init(template: TransactionTemplate) {
+        self.transaction = nil
+        self.isDuplicate = true
+        self.isTemplate = true
+        _type = State(initialValue: template.type)
+        _amount = State(initialValue: String(format: "%.2f", template.amount))
+        _categoryID = State(initialValue: template.categoryID)
+        _payment = State(initialValue: template.paymentMethod)
+        _transactionCurrency = State(initialValue: template.currencyCode)
+        _date = State(initialValue: .now)
+        _merchant = State(initialValue: template.merchant)
+        _notes = State(initialValue: template.notes)
+        _tagsText = State(initialValue: template.tags.joined(separator: ", "))
     }
 
     var body: some View {
@@ -106,6 +128,18 @@ struct AddTransactionView: View {
                     TextField("Tags (comma separated)", text: $tagsText)
                         .textInputAutocapitalization(.never)
                         .accessibilityIdentifier("transactionTagsField")
+                    if !suggestedTags.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack {
+                                ForEach(suggestedTags, id: \.self) { tag in
+                                    Button("#\(tag)") { toggleSuggestedTag(tag) }
+                                        .buttonStyle(.bordered)
+                                        .tint(TransactionTags.parse(tagsText).contains(where: { $0.caseInsensitiveCompare(tag) == .orderedSame }) ? .accentColor : .secondary)
+                                }
+                            }
+                        }
+                        .accessibilityIdentifier("suggestedTransactionTags")
+                    }
                     Text("Add up to 8 labels, such as work, tax, vacation, or reimbursable.")
                         .font(.caption).foregroundStyle(.secondary)
                     if !MerchantRuleStore.normalizedKey(merchant).isEmpty {
@@ -117,7 +151,17 @@ struct AddTransactionView: View {
                         }
                     }
                 }
-            }.navigationTitle(isDuplicate ? "Duplicate Transaction" : (transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction"))).navigationBarTitleDisplayMode(.inline)
+                if transaction == nil && !isTemplate {
+                    Section("Quick Template") {
+                        Toggle("Save as a reusable template", isOn: $saveAsTemplate)
+                            .accessibilityIdentifier("saveAsTemplateToggle")
+                        if saveAsTemplate {
+                            TextField("Template name", text: $templateName)
+                                .accessibilityIdentifier("templateNameField")
+                        }
+                    }
+                }
+            }.navigationTitle(isTemplate ? "Use Quick Template" : (isDuplicate ? "Duplicate Transaction" : (transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction")))).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveTransactionButton") } }
                 .alert(alertTitle, isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
                 .onChange(of: receiptItem) { _, item in if let item { scanReceipt(item) } }
@@ -128,6 +172,12 @@ struct AddTransactionView: View {
         guard let value = DomainLogic.parseAmount(amount) else { alertTitle = "Couldn’t Save"; errorMessage = AppLanguage.localized("Enter a valid amount greater than zero."); return }
         let cleanMerchant = DomainLogic.sanitizedText(merchant, maximumLength: 80)
         let cleanNotes = DomainLogic.sanitizedText(notes, maximumLength: 500)
+        let cleanTemplateName = DomainLogic.sanitizedText(templateName, maximumLength: 40)
+        guard !saveAsTemplate || !cleanTemplateName.isEmpty else {
+            alertTitle = "Template Name Required"
+            errorMessage = "Enter a name for this reusable template."
+            return
+        }
         if let transaction {
             transaction.amount = value; transaction.type = type; transaction.categoryRaw = categoryID
             transaction.paymentMethod = payment; transaction.currencyCode = transactionCurrency
@@ -145,6 +195,14 @@ struct AddTransactionView: View {
             if rememberMerchant, !cleanMerchant.isEmpty {
                 let rule = MerchantRule(merchantName: cleanMerchant, type: type, categoryID: categoryID, paymentMethod: payment)
                 merchantRulesJSON = MerchantRuleStore.encode(MerchantRuleStore.upserting(rule, in: MerchantRuleStore.decode(merchantRulesJSON)))
+            }
+            if saveAsTemplate {
+                let template = TransactionTemplate(
+                    name: cleanTemplateName, amount: value, type: type, categoryID: categoryID,
+                    paymentMethod: payment, currencyCode: transactionCurrency, merchant: cleanMerchant,
+                    notes: cleanNotes, tags: TransactionTags.parse(tagsText))
+                templatesJSON = TransactionTemplateStore.encode(
+                    TransactionTemplateStore.upserting(template, in: TransactionTemplateStore.decode(templatesJSON)))
             }
             dismiss()
         } catch { alertTitle = "Couldn’t Save"; errorMessage = error.localizedDescription }
@@ -166,6 +224,24 @@ struct AddTransactionView: View {
 
     private func categoryOptions(for type: TransactionType) -> [CategoryPresentation] {
         CustomCategoryCatalog.options(for: type, custom: CustomCategoryCatalog.decode(customCategoriesJSON), includeArchivedID: categoryID)
+    }
+
+    private var suggestedTags: [String] {
+        let counts = Dictionary(grouping: existingTransactions.flatMap(\.tags), by: { $0.lowercased() })
+        return counts.sorted {
+            if $0.value.count == $1.value.count { return $0.key < $1.key }
+            return $0.value.count > $1.value.count
+        }.prefix(6).compactMap { $0.value.first }
+    }
+
+    private func toggleSuggestedTag(_ tag: String) {
+        var tags = TransactionTags.parse(tagsText)
+        if let index = tags.firstIndex(where: { $0.caseInsensitiveCompare(tag) == .orderedSame }) {
+            tags.remove(at: index)
+        } else {
+            tags.append(tag)
+        }
+        tagsText = TransactionTags.normalized(tags).joined(separator: ", ")
     }
 
     private func applyRule(for merchant: String) {

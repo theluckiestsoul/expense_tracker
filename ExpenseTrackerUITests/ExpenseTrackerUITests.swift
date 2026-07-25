@@ -51,6 +51,7 @@ final class ExpenseTrackerUITests: XCTestCase {
         app.swipeUp()
         XCTAssertTrue(app.textFields["transactionTagsField"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.switches["rememberMerchantRule"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.switches["saveAsTemplateToggle"].waitForExistence(timeout: 3))
         XCTAssertFalse(app.buttons["saveTransactionButton"].isEnabled)
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 5))
@@ -91,6 +92,9 @@ final class ExpenseTrackerUITests: XCTestCase {
 
         app.tabBars.buttons["Settings"].tap()
         XCTAssertTrue(app.buttons["merchantRulesLink"].exists)
+        XCTAssertTrue(app.buttons["quickTemplatesLink"].exists)
+        app.swipeUp()
+        XCTAssertTrue(app.buttons["recurringTransactionsLink"].waitForExistence(timeout: 5))
         app.buttons["recurringTransactionsLink"].tap()
         app.buttons["addRecurringTransaction"].tap()
         let name = app.textFields["recurringName"]
@@ -166,6 +170,7 @@ final class ExpenseTrackerUITests: XCTestCase {
 
         app.navigationBars.buttons.element(boundBy: 0).tap()
         app.tabBars.buttons["Transactions"].tap()
+        XCTAssertTrue(app.buttons["selectTransactionsButton"].waitForExistence(timeout: 5))
         app.buttons["transactionFiltersButton"].tap()
         XCTAssertTrue(app.navigationBars["Filter Transactions"].waitForExistence(timeout: 5))
         app.buttons["applyTransactionFilters"].tap()
@@ -182,6 +187,7 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Savings Rate"].exists)
         XCTAssertTrue(app.staticTexts["Compared with Previous Month"].exists)
         XCTAssertTrue(app.staticTexts["Spending Insights"].exists)
+        XCTAssertTrue(app.buttons["spendingCalendarLink"].exists)
     }
 
     func testPersianLocalization() {

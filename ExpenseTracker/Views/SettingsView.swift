@@ -39,6 +39,7 @@ struct SettingsView: View {
     @AppStorage(CategoryBudgetStore.storageKey) private var categoryBudgetsJSON = ""
     @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
     @AppStorage(MerchantRuleStore.storageKey) private var merchantRulesJSON = ""
+    @AppStorage(TransactionTemplateStore.storageKey) private var templatesJSON = ""
     @AppStorage(OnboardingCoachMark.completionKey) private var hasCompletedOnboarding = false
     @State private var exporting = false
     @State private var csvExportKind: CSVExportKind = .transactions
@@ -94,6 +95,8 @@ struct SettingsView: View {
                 Section("Automation") {
                     NavigationLink("Merchant Rules") { MerchantRulesView() }
                         .accessibilityIdentifier("merchantRulesLink")
+                    NavigationLink("Quick Templates") { QuickTemplatesView() }
+                        .accessibilityIdentifier("quickTemplatesLink")
                     Toggle("Bill Reminders", isOn: Binding(
                         get: { billRemindersEnabled },
                         set: { updateBillReminders($0) }
@@ -192,7 +195,8 @@ struct SettingsView: View {
             categoryBudgets: CategoryBudgetStore.decode(categoryBudgetsJSON),
             savingsGoals: SavingsGoalStore.decode(savingsGoalsJSON),
             recurringTransactions: RecurringTransactionStore.decode(recurringTransactionsJSON),
-            merchantRules: MerchantRuleStore.decode(merchantRulesJSON)
+            merchantRules: MerchantRuleStore.decode(merchantRulesJSON),
+            transactionTemplates: TransactionTemplateStore.decode(templatesJSON)
         )
     }
     private var version: String {
@@ -239,6 +243,7 @@ struct SettingsView: View {
             savingsGoalsJSON = SavingsGoalStore.encode(backup.savingsGoals)
             recurringTransactionsJSON = RecurringTransactionStore.encode(backup.recurringTransactions)
             if let merchantRules = backup.merchantRules { merchantRulesJSON = MerchantRuleStore.encode(merchantRules) }
+            if let templates = backup.transactionTemplates { templatesJSON = TransactionTemplateStore.encode(templates) }
             billRemindersEnabled = false
             pendingBackup = nil; statusTitle = "Restore Complete"
             statusMessage = "Restored \(backup.transactions.count) transactions and all included LedgerLeaf settings. Re-enable reminders if you want notifications on this device."

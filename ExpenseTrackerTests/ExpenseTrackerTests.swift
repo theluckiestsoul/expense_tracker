@@ -3,6 +3,27 @@ import SwiftData
 @testable import ExpenseTracker
 
 final class ExpenseTrackerTests: XCTestCase {
+    func testQuickTemplatesRoundTripUpdateLimitAndValidate() {
+        let first = TransactionTemplate(name: "  Coffee  ", amount: 4.5, type: .expense,
+                                        categoryID: ExpenseCategory.food.rawValue, paymentMethod: .card,
+                                        currencyCode: "USD", merchant: "Cafe", notes: "", tags: ["work"])
+        XCTAssertEqual(first.name, "Coffee")
+        XCTAssertTrue(TransactionTemplateStore.isValid(first))
+        XCTAssertEqual(TransactionTemplateStore.decode(TransactionTemplateStore.encode([first])), [first])
+
+        var replacement = first
+        replacement.amount = 5
+        replacement.updatedAt = first.updatedAt.addingTimeInterval(1)
+        XCTAssertEqual(TransactionTemplateStore.upserting(replacement, in: [first]).first?.amount, 5)
+        let second = TransactionTemplate(name: "Train", amount: 10, type: .expense,
+                                         categoryID: ExpenseCategory.travel.rawValue, paymentMethod: .card,
+                                         currencyCode: "EUR", merchant: "Rail", notes: "", tags: [])
+        XCTAssertEqual(TransactionTemplateStore.upserting(second, in: [first], limit: 1), [second])
+        var invalid = first
+        invalid.amount = .infinity
+        XCTAssertFalse(TransactionTemplateStore.isValid(invalid))
+    }
+
     func testTransactionTagsNormalizeLimitAndRoundTrip() {
         let longTag = String(repeating: "a", count: 30)
         let parsed = TransactionTags.parse(" Work, work, Café, , \(longTag), tax, one, two, three, four, five, six")
@@ -319,6 +340,12 @@ final class ExpenseTrackerTests: XCTestCase {
         let ordinary = expense(20, category: .food, days: 0)
         XCTAssertEqual(ReportCalculator.unusualExpenses(candidates: [ordinary, unusual], history: history).map(\.id), [unusual.id])
         XCTAssertTrue(ReportCalculator.unusualExpenses(candidates: [unusual], history: Array(history.prefix(2))).isEmpty)
+
+        let secondCafe = expense(15, category: .food, days: 1, merchant: "  SPECIAL dinner ")
+        let merchants = ReportCalculator.merchantSpending(transactions: [unusual, secondCafe, ordinary])
+        XCTAssertEqual(merchants.first?.merchantKey, "special dinner")
+        XCTAssertEqual(merchants.first?.amount, 55)
+        XCTAssertEqual(merchants.first?.transactionCount, 2)
     }
 
     func testBillRemindersIncludeOnlyFutureActiveExpenses() {

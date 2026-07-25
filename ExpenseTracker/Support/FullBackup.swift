@@ -58,6 +58,7 @@ struct LedgerLeafBackup: Codable, Equatable {
     var savingsGoals: [SavingsGoal]
     var recurringTransactions: [RecurringTransaction]
     var merchantRules: [MerchantRule]? = nil
+    var transactionTemplates: [TransactionTemplate]? = nil
 
     func encoded() throws -> Data {
         let encoder = JSONEncoder()
@@ -87,6 +88,7 @@ struct LedgerLeafBackup: Codable, Equatable {
             return accountsByID[accountID]?.currencyCode == schedule.currencyCode
         }
         let rules = merchantRules ?? []
+        let templates = transactionTemplates ?? []
         guard currencies.contains(preferences.currencyCode), languages.contains(preferences.languageCode),
               preferences.themeRaw.map({ AppTheme(rawValue: $0) != nil }) ?? true,
               preferences.monthlyBudget.isFinite, preferences.monthlyBudget >= 0,
@@ -108,6 +110,10 @@ struct LedgerLeafBackup: Codable, Equatable {
         }
         guard Set(rules.map(\.merchantKey)).count == rules.count,
               rules.allSatisfy({ !$0.merchantKey.isEmpty && !$0.merchantName.isEmpty }) else {
+            throw BackupError.invalidData
+        }
+        guard Set(templates.map(\.id)).count == templates.count,
+              templates.allSatisfy(TransactionTemplateStore.isValid) else {
             throw BackupError.invalidData
         }
     }

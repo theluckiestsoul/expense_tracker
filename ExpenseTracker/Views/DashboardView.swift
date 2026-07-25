@@ -11,7 +11,9 @@ struct DashboardView: View {
     @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
     @AppStorage(RecurringTransactionStore.storageKey) private var recurringTransactionsJSON = ""
     @AppStorage(AppTheme.storageKey) private var themeRaw = AppTheme.system.rawValue
+    @AppStorage(TransactionTemplateStore.storageKey) private var templatesJSON = ""
     @State private var addingType: TransactionType?
+    @State private var selectedTemplate: TransactionTemplate?
     private var theme: AppTheme { AppTheme(rawValue: themeRaw) ?? .system }
     private var currencyTransactions: [Transaction] {
         transactions.filter { ($0.currencyCode ?? currencyCode) == currencyCode }
@@ -44,6 +46,9 @@ struct DashboardView: View {
                 return (item, category, spent)
             }
             .sorted { ($0.2 / $0.0.amount) > ($1.2 / $1.0.amount) }
+    }
+    private var quickTemplates: [TransactionTemplate] {
+        TransactionTemplateStore.decode(templatesJSON).filter { $0.currencyCode == currencyCode }
     }
 
     var body: some View {
@@ -96,6 +101,30 @@ struct DashboardView: View {
                         quickAction("Expense", symbol: "arrow.up.right", color: .orange) { addingType = .expense }
                             .coachMarkTarget(.expenseButton)
                         quickAction("Income", symbol: "arrow.down.left", color: .green) { addingType = .income }
+                    }
+
+                    if !quickTemplates.isEmpty {
+                        HStack {
+                            sectionHeader("Quick Templates")
+                            Spacer()
+                            NavigationLink("Manage") { QuickTemplatesView() }.font(.subheadline.weight(.semibold))
+                        }
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(quickTemplates.prefix(6)) { template in
+                                    Button { selectedTemplate = template } label: {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            Label(template.name, systemImage: "bolt.fill").font(.subheadline.weight(.semibold))
+                                            Text(AppFormat.money(template.amount, currencyCode: template.currencyCode))
+                                                .font(.caption).foregroundStyle(.secondary)
+                                        }
+                                        .frame(minWidth: 120, alignment: .leading).padding(12)
+                                        .background(.background, in: RoundedRectangle(cornerRadius: 14))
+                                    }.buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        .accessibilityIdentifier("dashboardQuickTemplates")
                     }
 
                     HStack { metric("Today’s spending", currencyTransactions.filter { Calendar.current.isDateInToday($0.transactionDate) && $0.type == .expense && $0.transferID == nil }.reduce(0) { $0 + $1.amount }); metric("Net this month", month.income - month.expenses) }
@@ -192,7 +221,8 @@ struct DashboardView: View {
                         .font(.headline.weight(.bold)).foregroundStyle(theme.accent).fixedSize()
                     }
                 }
-                .sheet(item: $addingType) { AddTransactionView(startingType: $0) }
+            .sheet(item: $addingType) { AddTransactionView(startingType: $0) }
+            .sheet(item: $selectedTemplate) { AddTransactionView(template: $0) }
         }
     }
     private func quickAction(_ title: LocalizedStringKey, symbol: String, color: Color, action: @escaping () -> Void) -> some View {

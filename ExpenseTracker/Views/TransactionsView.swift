@@ -34,6 +34,10 @@ struct TransactionsView: View {
     @State private var duplicating: Transaction?
     @State private var pendingDeletion: [Transaction] = []
     @State private var errorMessage: String?
+    @State private var isSelecting = false
+    @State private var selectedIDs = Set<UUID>()
+    @State private var showingBulkTags = false
+    @State private var bulkTagsText = ""
     private var customCategories: [CustomCategory] { CustomCategoryCatalog.decode(customCategoriesJSON) }
     private var categoryOptions: [CategoryPresentation] {
         let types = filter.map { [$0] } ?? TransactionType.allCases
@@ -65,12 +69,22 @@ struct TransactionsView: View {
                 Picker("Filter", selection: $filter) { Text("All").tag(TransactionType?.none); ForEach(TransactionType.allCases) { Text($0.title).tag(Optional($0)) } }.pickerStyle(.segmented)
                     .onChange(of: filter) { _, _ in
                         if !categoryFilter.isEmpty && !categoryOptions.contains(where: { $0.id == categoryFilter }) { categoryFilter = "" }
-                    }
+                }
                 ForEach(shown) { transaction in
-                    Button { if transaction.transferID == nil { editing = transaction } } label: { TransactionRow(transaction: transaction) }
-                        .buttonStyle(.plain)
+                    HStack {
+                        if isSelecting {
+                            Image(systemName: selectedIDs.contains(transaction.id) ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(selectedIDs.contains(transaction.id) ? Color.accentColor : .secondary)
+                        }
+                        TransactionRow(transaction: transaction)
+                    }
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            if isSelecting { toggleSelection(transaction.id) }
+                            else if transaction.transferID == nil { editing = transaction }
+                        }
                         .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                            if transaction.transferID == nil {
+                            if !isSelecting && transaction.transferID == nil {
                                 Button { duplicating = transaction } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
                                     .tint(.indigo)
                                     .accessibilityIdentifier("duplicateTransaction_\(transaction.id.uuidString)")
@@ -83,11 +97,32 @@ struct TransactionsView: View {
                     .onDelete { offsets in pendingDeletion = offsets.map { shown[$0] } }
             }.navigationTitle("Transactions").searchable(text: $search, prompt: "Merchant, notes, category, payment, tag")
                 .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(isSelecting ? "Done" : "Select") { toggleSelectionMode() }
+                            .accessibilityIdentifier("selectTransactionsButton")
+                    }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button { showingFilters = true } label: {
                             if activeFilterCount == 0 { Label("Filters", systemImage: "line.3.horizontal.decrease.circle") }
                             else { Label("Filters (\(activeFilterCount))", systemImage: "line.3.horizontal.decrease.circle.fill") }
                         }.accessibilityIdentifier("transactionFiltersButton")
+                    }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    if isSelecting && !selectedIDs.isEmpty {
+                        HStack {
+                            Button { bulkTagsText = ""; showingBulkTags = true } label: {
+                                Label("Add Tags", systemImage: "tag")
+                            }
+                            Spacer()
+                            Text("\(selectedIDs.count) selected").font(.caption).foregroundStyle(.secondary)
+                            Spacer()
+                            Button(role: .destructive) { prepareBulkDeletion() } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                        }
+                        .padding().background(.bar)
+                        .accessibilityIdentifier("bulkTransactionActions")
                     }
                 }
                 .overlay { if shown.isEmpty { ContentUnavailableView.search(text: search) } }
@@ -118,6 +153,26 @@ struct TransactionsView: View {
                     }
                     .presentationDetents([.medium, .large])
                 }
+                .sheet(isPresented: $showingBulkTags) {
+                    NavigationStack {
+                        Form {
+                            TextField("Tags (comma separated)", text: $bulkTagsText)
+                                .textInputAutocapitalization(.never)
+                                .accessibilityIdentifier("bulkTagsField")
+                            Text("New tags are added without removing existing tags.")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
+                        .navigationTitle("Tag Transactions").navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) { Button("Cancel") { showingBulkTags = false } }
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Apply") { applyBulkTags() }
+                                    .disabled(TransactionTags.parse(bulkTagsText).isEmpty)
+                                    .accessibilityIdentifier("applyBulkTags")
+                            }
+                        }
+                    }.presentationDetents([.medium])
+                }
                 .confirmationDialog("Delete \(pendingDeletion.count) transaction\(pendingDeletion.count == 1 ? "" : "s")?", isPresented: Binding(get: { !pendingDeletion.isEmpty }, set: { if !$0 { pendingDeletion = [] } }), titleVisibility: .visible) {
                     Button("Delete", role: .destructive) { deletePending() }; Button("Cancel", role: .cancel) { pendingDeletion = [] }
                 } message: { Text("This action can’t be undone.") }
@@ -128,7 +183,43 @@ struct TransactionsView: View {
         let transferIDs = Set(pendingDeletion.compactMap(\.transferID))
         let linked = all.filter { transaction in transaction.transferID.map(transferIDs.contains) ?? false }
         Dictionary((pendingDeletion + linked).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first }).values.forEach(context.delete)
-        do { try context.save(); pendingDeletion = [] } catch { context.rollback(); errorMessage = error.localizedDescription; pendingDeletion = [] }
+        do {
+            try context.save()
+            pendingDeletion = []
+            selectedIDs.removeAll()
+            isSelecting = false
+        } catch {
+            context.rollback()
+            errorMessage = error.localizedDescription
+            pendingDeletion = []
+        }
     }
     private func clearFilters() { categoryFilter = ""; paymentFilter = ""; tagFilter = ""; dateFilter = .all }
+    private func toggleSelection(_ id: UUID) {
+        if !selectedIDs.insert(id).inserted { selectedIDs.remove(id) }
+    }
+    private func toggleSelectionMode() {
+        isSelecting.toggle()
+        if !isSelecting { selectedIDs.removeAll() }
+    }
+    private func prepareBulkDeletion() {
+        pendingDeletion = all.filter { selectedIDs.contains($0.id) }
+    }
+    private func applyBulkTags() {
+        let additions = TransactionTags.parse(bulkTagsText)
+        all.filter { selectedIDs.contains($0.id) }.forEach {
+            $0.tags = TransactionTags.normalized($0.tags + additions)
+            $0.updatedAt = .now
+        }
+        do {
+            try context.save()
+            showingBulkTags = false
+            selectedIDs.removeAll()
+            isSelecting = false
+        } catch {
+            context.rollback()
+            showingBulkTags = false
+            errorMessage = error.localizedDescription
+        }
+    }
 }

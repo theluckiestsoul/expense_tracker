@@ -51,6 +51,14 @@ struct CategorySpendingChange: Equatable {
     var percentageChange: Double { increase / previousAmount }
 }
 
+struct MerchantSpending: Identifiable, Equatable {
+    let merchantKey: String
+    let merchantName: String
+    let amount: Double
+    let transactionCount: Int
+    var id: String { merchantKey }
+}
+
 enum ReportCalculator {
     static func percentageChange(current: Double, previous: Double) -> Double? {
         guard previous > 0, current.isFinite, previous.isFinite else { return nil }
@@ -90,6 +98,23 @@ enum ReportCalculator {
             let median = amounts.count.isMultiple(of: 2) ? (amounts[middle - 1] + amounts[middle]) / 2 : amounts[middle]
             return median > 0 && candidate.amount >= median * 2
         }.sorted { $0.amount > $1.amount }
+    }
+
+    static func merchantSpending(transactions: [Transaction]) -> [MerchantSpending] {
+        let eligible = transactions.filter {
+            $0.type == .expense && $0.transferID == nil && !MerchantRuleStore.normalizedKey($0.merchant).isEmpty
+        }
+        return Dictionary(grouping: eligible, by: { MerchantRuleStore.normalizedKey($0.merchant) })
+            .compactMap { key, items in
+                guard let newest = items.max(by: { $0.transactionDate < $1.transactionDate }) else { return nil }
+                return MerchantSpending(merchantKey: key, merchantName: newest.merchant,
+                                        amount: items.reduce(0) { $0 + $1.amount },
+                                        transactionCount: items.count)
+            }
+            .sorted {
+                if $0.amount == $1.amount { return $0.merchantName < $1.merchantName }
+                return $0.amount > $1.amount
+            }
     }
 
     static func cashFlow(transactions: [Transaction], period: ReportPeriod, now: Date = .now, calendar: Calendar = .current) -> [CashFlowPoint] {

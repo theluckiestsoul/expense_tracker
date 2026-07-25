@@ -30,6 +30,12 @@ Transaction tags add flexible labels such as work, tax, vacation, or reimbursabl
 
 On-device Spending Insights highlight the category with the largest increase from the previous period and flag unusually large expenses against the user’s own category history. Tapping an unusual expense opens it for review or correction.
 
+Quick Templates let users save a complete income or expense entry and reuse it from the dashboard or Settings. Frequently used tags appear as one-tap suggestions while entering a transaction, reducing repetitive typing without sending history off device.
+
+Reports include top-merchant summaries and a browsable monthly spending calendar with intensity-based daily cells and per-day transaction details.
+
+Transaction selection supports safely tagging or deleting multiple records in one operation. Bulk tags are merged with existing labels, and destructive actions still require confirmation.
+
 Reports support weekly, monthly, yearly, and all-time views with income-versus-expense cash-flow charts, net cash flow, savings rate, period-aware category breakdowns, and income/spending comparisons against the previous matching period.
 
 Optional bill reminders schedule private, on-device notifications one day before active recurring expenses. Notification access is requested only when the user enables Bill Reminders in Settings.
