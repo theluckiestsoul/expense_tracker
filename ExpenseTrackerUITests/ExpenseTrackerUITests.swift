@@ -57,6 +57,31 @@ final class ExpenseTrackerUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Dashboard"].waitForExistence(timeout: 5))
     }
 
+    func testTransactionCanBeDeletedWithTrailingSwipe() {
+        let app = configuredApp()
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launch()
+
+        app.tabBars.buttons["Add"].tap()
+        let amount = app.textFields["amountField"]
+        XCTAssertTrue(amount.waitForExistence(timeout: 5))
+        amount.tap()
+        amount.typeText("9.99")
+        let merchant = app.textFields["merchantField"]
+        merchant.tap()
+        merchant.typeText("Delete Me UI")
+        app.buttons["saveTransactionButton"].tap()
+
+        app.tabBars.buttons["Transactions"].tap()
+        let row = app.staticTexts["Delete Me UI"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.swipeLeft()
+        app.buttons["Delete"].tap()
+        XCTAssertTrue(app.buttons["Delete"].waitForExistence(timeout: 3))
+        app.buttons["Delete"].tap()
+        XCTAssertTrue(row.waitForNonExistence(timeout: 5))
+    }
+
     func testDeviceLanguageSelectsSupportedLocalization() {
         let app = configuredApp()
         app.launchArguments += ["-AppleLanguages", "(es)", "-AppleLocale", "es_ES"]

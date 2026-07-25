@@ -36,6 +36,8 @@ Reports include top-merchant summaries and a browsable monthly spending calendar
 
 Transaction selection supports safely tagging or deleting multiple records in one operation. Bulk tags are merged with existing labels, and destructive actions still require confirmation.
 
+Individual transactions can be deleted with a familiar trailing swipe or from the long-press menu. LedgerLeaf asks for confirmation before removing the entry.
+
 Reports support weekly, monthly, yearly, and all-time views with income-versus-expense cash-flow charts, net cash flow, savings rate, period-aware category breakdowns, and income/spending comparisons against the previous matching period.
 
 Optional bill reminders schedule private, on-device notifications one day before active recurring expenses. Notification access is requested only when the user enables Bill Reminders in Settings.

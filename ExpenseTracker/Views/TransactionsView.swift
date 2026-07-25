@@ -87,11 +87,28 @@ struct TransactionsView: View {
                             if !isSelecting && transaction.transferID == nil {
                                 Button { duplicating = transaction } label: { Label("Duplicate", systemImage: "plus.square.on.square") }
                                     .tint(.indigo)
-                                    .accessibilityIdentifier("duplicateTransaction_\(transaction.id.uuidString)")
+                                .accessibilityIdentifier("duplicateTransaction_\(transaction.id.uuidString)")
+                            }
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            if !isSelecting {
+                                Button(role: .destructive) { requestDeletion(transaction) } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                                .accessibilityIdentifier("deleteTransaction_\(transaction.id.uuidString)")
                             }
                         }
                         .contextMenu {
-                            if transaction.transferID == nil { Button { duplicating = transaction } label: { Label("Duplicate", systemImage: "plus.square.on.square") } }
+                            if !isSelecting {
+                                if transaction.transferID == nil {
+                                    Button { duplicating = transaction } label: {
+                                        Label("Duplicate", systemImage: "plus.square.on.square")
+                                    }
+                                }
+                                Button(role: .destructive) { requestDeletion(transaction) } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
+                            }
                         }
                 }
                     .onDelete { offsets in pendingDeletion = offsets.map { shown[$0] } }
@@ -204,6 +221,9 @@ struct TransactionsView: View {
     }
     private func prepareBulkDeletion() {
         pendingDeletion = all.filter { selectedIDs.contains($0.id) }
+    }
+    private func requestDeletion(_ transaction: Transaction) {
+        pendingDeletion = [transaction]
     }
     private func applyBulkTags() {
         let additions = TransactionTags.parse(bulkTagsText)
