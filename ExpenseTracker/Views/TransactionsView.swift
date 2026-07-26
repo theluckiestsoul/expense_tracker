@@ -32,6 +32,7 @@ struct TransactionsView: View {
     @State private var showingFilters = false
     @State private var editing: Transaction?
     @State private var duplicating: Transaction?
+    @State private var refunding: Transaction?
     @State private var pendingDeletion: [Transaction] = []
     @State private var errorMessage: String?
     @State private var isSelecting = false
@@ -48,6 +49,7 @@ struct TransactionsView: View {
     private var shown: [Transaction] {
         let term = search.trimmingCharacters(in: .whitespacesAndNewlines)
         return all.filter { transaction in
+            guard !transaction.isDeleted else { return false }
             let category = transaction.categoryPresentation(customCategories: customCategories)
             let matchesSearch = term.isEmpty || transaction.merchant.localizedCaseInsensitiveContains(term)
                 || transaction.notes.localizedCaseInsensitiveContains(term)
@@ -104,6 +106,11 @@ struct TransactionsView: View {
                                     Button { duplicating = transaction } label: {
                                         Label("Duplicate", systemImage: "plus.square.on.square")
                                     }
+                                    if transaction.type == .expense {
+                                        Button { refunding = transaction } label: {
+                                            Label("Record Refund", systemImage: "arrow.uturn.backward.circle")
+                                        }
+                                    }
                                 }
                                 Button(role: .destructive) { requestDeletion(transaction) } label: {
                                     Label("Delete", systemImage: "trash")
@@ -145,6 +152,7 @@ struct TransactionsView: View {
                 .overlay { if shown.isEmpty { ContentUnavailableView.search(text: search) } }
                 .sheet(item: $editing) { AddTransactionView(transaction: $0) }
                 .sheet(item: $duplicating) { AddTransactionView(copying: $0) }
+                .sheet(item: $refunding) { AddTransactionView(refunding: $0) }
                 .sheet(isPresented: $showingFilters) {
                     NavigationStack {
                         Form {
@@ -199,7 +207,10 @@ struct TransactionsView: View {
     private func deletePending() {
         let transferIDs = Set(pendingDeletion.compactMap(\.transferID))
         let linked = all.filter { transaction in transaction.transferID.map(transferIDs.contains) ?? false }
-        Dictionary((pendingDeletion + linked).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first }).values.forEach(context.delete)
+        Dictionary((pendingDeletion + linked).map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first }).values.forEach {
+            $0.deletedAt = .now
+            $0.updatedAt = .now
+        }
         do {
             try context.save()
             pendingDeletion = []

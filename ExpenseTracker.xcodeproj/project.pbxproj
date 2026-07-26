@@ -268,6 +268,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = LedgerLeaf;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to protect your financial data in LedgerLeaf.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Use your microphone to dictate transaction details.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Convert your spoken transaction details into text on your device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -291,6 +293,8 @@
 				INFOPLIST_KEY_CFBundleDisplayName = LedgerLeaf;
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Use Face ID to protect your financial data in LedgerLeaf.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Use your microphone to dictate transaction details.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Convert your spoken transaction details into text on your device.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

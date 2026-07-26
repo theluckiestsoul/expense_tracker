@@ -455,4 +455,42 @@ final class ExpenseTrackerTests: XCTestCase {
         _ = try RecurringTransactionProcessor.processDue(in: context, schedulesJSON: originalJSON, now: now, calendar: calendar)
         XCTAssertEqual(try context.fetch(FetchDescriptor<Transaction>()).count, 3)
     }
+
+    func testQuickEntryParsesAmountMerchantCategoryDateAndPayment() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 7, day: 25, hour: 12))!
+        let result = QuickEntryParser.parse("Lunch ₹350 at Green Cafe yesterday using UPI", now: now, calendar: calendar)
+        XCTAssertEqual(result?.amount, 350)
+        XCTAssertEqual(result?.merchant, "Green Cafe")
+        XCTAssertEqual(result?.category, .food)
+        XCTAssertEqual(result?.paymentMethod, .upi)
+        XCTAssertEqual(calendar.component(.day, from: result!.date), 24)
+        XCTAssertNil(QuickEntryParser.parse("Lunch at Green Cafe"))
+    }
+
+    func testTransactionMetadataHistorySplitsAndSoftDelete() {
+        let transaction = Transaction(amount: 100, type: .expense, category: .food, paymentMethod: .card,
+                                      currencyCode: "USD", transactionDate: .now, merchant: "Cafe")
+        transaction.splits = [
+            TransactionSplit(categoryID: ExpenseCategory.food.rawValue, amount: 60),
+            TransactionSplit(categoryID: ExpenseCategory.entertainment.rawValue, amount: 40)
+        ]
+        XCTAssertEqual(transaction.splits.reduce(0) { $0 + $1.amount }, 100)
+        transaction.recordRevision()
+        transaction.amount = 125
+        XCTAssertEqual(transaction.revisionHistory.first?.amount, 100)
+        transaction.restore(transaction.revisionHistory[0])
+        XCTAssertEqual(transaction.amount, 100)
+        transaction.deletedAt = .now
+        XCTAssertTrue(transaction.isDeleted)
+    }
+
+    func testEncryptedBackupRoundTripAndWrongPasswordFails() throws {
+        let original = Data("private ledger data".utf8)
+        let encrypted = try EncryptedBackup.encrypt(original, password: "correct horse battery staple")
+        XCTAssertNotEqual(encrypted, original)
+        XCTAssertEqual(try EncryptedBackup.decrypt(encrypted, password: "correct horse battery staple"), original)
+        XCTAssertThrowsError(try EncryptedBackup.decrypt(encrypted, password: "wrong password"))
+    }
 }

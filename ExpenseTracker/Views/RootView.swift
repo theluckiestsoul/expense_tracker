@@ -11,6 +11,8 @@ struct RootView: View {
     @State private var selection = 0
     @State private var adding = false
     @State private var onboardingStep = 0
+    @State private var showingQuickEntry = false
+    @State private var showingReceiptScanner = false
 
     var body: some View {
         TabView(selection: $selection) {
@@ -37,6 +39,10 @@ struct RootView: View {
         }
         .onChange(of: selection) { _, value in if value == 2 { adding = true; selection = 0 } }
         .sheet(isPresented: $adding) { AddTransactionView() }
+        .sheet(isPresented: $showingQuickEntry) { QuickEntryView() }
+        .sheet(isPresented: $showingReceiptScanner) {
+            NavigationStack { BatchReceiptImportView() }
+        }
         .onChange(of: hasCompletedOnboarding) { _, completed in
             if !completed { onboardingStep = 0; selection = 0 }
         }
@@ -44,10 +50,14 @@ struct RootView: View {
             try? LegacyDataMigrator.assignMissingCurrencies(in: context, currencyCode: currencyCode)
             processSchedules()
             if billRemindersEnabled { await BillReminderService.schedule(schedulesJSON: recurringTransactionsJSON) }
+            processShortcutRequests()
         }
         .onChange(of: recurringTransactionsJSON) { _, _ in
             processSchedules()
             if billRemindersEnabled { Task { await BillReminderService.schedule(schedulesJSON: recurringTransactionsJSON) } }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            processShortcutRequests()
         }
     }
 
@@ -84,6 +94,17 @@ struct RootView: View {
         if let updated = try? RecurringTransactionProcessor.processDue(in: context, schedulesJSON: recurringTransactionsJSON),
            RecurringTransactionStore.decode(updated) != RecurringTransactionStore.decode(recurringTransactionsJSON) {
             recurringTransactionsJSON = updated
+        }
+    }
+
+    private func processShortcutRequests() {
+        if UserDefaults.standard.bool(forKey: "openQuickEntryFromShortcut") {
+            UserDefaults.standard.removeObject(forKey: "openQuickEntryFromShortcut")
+            showingQuickEntry = true
+        }
+        if UserDefaults.standard.bool(forKey: "openReceiptScannerFromShortcut") {
+            UserDefaults.standard.removeObject(forKey: "openReceiptScannerFromShortcut")
+            showingReceiptScanner = true
         }
     }
 }

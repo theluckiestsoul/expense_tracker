@@ -3,6 +3,7 @@ import SwiftUI
 struct SecureRootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage(PrivacyLock.storageKey) private var lockEnabled = false
+    @AppStorage("privacyShieldEnabled") private var privacyShieldEnabled = true
     @State private var unlocked = false
     @State private var authenticating = false
     @State private var errorMessage: String?
@@ -21,6 +22,19 @@ struct SecureRootView: View {
                     Button("Unlock", action: unlock).buttonStyle(.borderedProminent)
                 }
                 .padding()
+            }
+        }
+        .overlay {
+            if privacyShieldEnabled && scenePhase != .active {
+                ZStack {
+                    Color(uiColor: .systemBackground).ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        Image(systemName: "leaf.fill").font(.system(size: 46)).foregroundStyle(.green)
+                        Text("LedgerLeaf").font(.title.bold())
+                        Text("Financial details hidden").foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityHidden(true)
             }
         }
         .task { if lockEnabled { await authenticate() } else { unlocked = true } }

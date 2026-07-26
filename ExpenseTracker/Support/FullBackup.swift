@@ -24,6 +24,14 @@ struct LedgerLeafBackup: Codable, Equatable {
         var accountID: String?
         var transferID: UUID?
         var tags: [String]? = nil
+        var receiptImageData: Data? = nil
+        var splits: [TransactionSplit]? = nil
+        var refundForID: UUID? = nil
+        var deletedAt: Date? = nil
+        var revisionHistory: [TransactionRevision]? = nil
+        var locationName: String? = nil
+        var latitude: Double? = nil
+        var longitude: Double? = nil
 
         init(_ transaction: Transaction, fallbackCurrency: String) {
             id = transaction.id; amount = transaction.amount; type = transaction.type
@@ -33,6 +41,10 @@ struct LedgerLeafBackup: Codable, Equatable {
             updatedAt = transaction.updatedAt; recurringSourceID = transaction.recurringSourceID
             accountID = transaction.accountID; transferID = transaction.transferID
             tags = transaction.tags
+            receiptImageData = transaction.receiptImageData; splits = transaction.splits
+            refundForID = transaction.refundForID; deletedAt = transaction.deletedAt
+            revisionHistory = transaction.revisionHistory; locationName = transaction.locationName
+            latitude = transaction.latitude; longitude = transaction.longitude
         }
     }
 
@@ -59,6 +71,9 @@ struct LedgerLeafBackup: Codable, Equatable {
     var recurringTransactions: [RecurringTransaction]
     var merchantRules: [MerchantRule]? = nil
     var transactionTemplates: [TransactionTemplate]? = nil
+    var budgetWorkspaces: [BudgetWorkspace]? = nil
+    var envelopes: [EnvelopeAllocation]? = nil
+    var bankImportProfiles: [BankImportProfile]? = nil
 
     func encoded() throws -> Data {
         let encoder = JSONEncoder()
@@ -89,11 +104,18 @@ struct LedgerLeafBackup: Codable, Equatable {
         }
         let rules = merchantRules ?? []
         let templates = transactionTemplates ?? []
+        let workspaces = budgetWorkspaces ?? []
+        let envelopeValues = envelopes ?? []
         guard currencies.contains(preferences.currencyCode), languages.contains(preferences.languageCode),
               preferences.themeRaw.map({ AppTheme(rawValue: $0) != nil }) ?? true,
               preferences.monthlyBudget.isFinite, preferences.monthlyBudget >= 0,
               Set(transactions.map(\.id)).count == transactions.count,
-              transactions.allSatisfy({ $0.amount.isFinite && $0.amount > 0 && currencies.contains($0.currencyCode) && TransactionTags.normalized($0.tags ?? []) == ($0.tags ?? []) }),
+              transactions.allSatisfy({
+                  $0.amount.isFinite && $0.amount > 0 && currencies.contains($0.currencyCode) &&
+                  TransactionTags.normalized($0.tags ?? []) == ($0.tags ?? []) &&
+                  (($0.splits ?? []).isEmpty || TransactionMetadata.validSplits($0.splits ?? [], total: $0.amount)) &&
+                  ($0.latitude?.isFinite ?? true) && ($0.longitude?.isFinite ?? true)
+              }),
               Set(customCategories.map(\.id)).count == customCategories.count,
               customCategories.allSatisfy({ !$0.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && CustomCategoryCatalog.symbols.contains($0.symbol) && CustomCategoryCatalog.colors.contains($0.colorName) }),
               Set(accounts.map(\.id)).count == accounts.count,
@@ -116,5 +138,11 @@ struct LedgerLeafBackup: Codable, Equatable {
               templates.allSatisfy(TransactionTemplateStore.isValid) else {
             throw BackupError.invalidData
         }
+        guard Set(workspaces.map(\.id)).count == workspaces.count,
+              workspaces.allSatisfy({ !$0.name.isEmpty && $0.amount.isFinite && $0.amount > 0 &&
+                  $0.carriedAmount.isFinite && currencies.contains($0.currencyCode) }),
+              Set(envelopeValues.map(\.id)).count == envelopeValues.count,
+              envelopeValues.allSatisfy({ $0.allocatedAmount.isFinite && $0.allocatedAmount > 0 &&
+                  currencies.contains($0.currencyCode) }) else { throw BackupError.invalidData }
     }
 }

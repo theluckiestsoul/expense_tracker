@@ -14,7 +14,7 @@ struct SpendingCalendarView: View {
     }
     private var monthExpenses: [Transaction] {
         transactions.filter {
-            $0.type == .expense && $0.transferID == nil && ($0.currencyCode ?? currencyCode) == currencyCode &&
+            !$0.isDeleted && $0.type == .expense && $0.transferID == nil && ($0.currencyCode ?? currencyCode) == currencyCode &&
             monthInterval.contains($0.transactionDate)
         }
     }

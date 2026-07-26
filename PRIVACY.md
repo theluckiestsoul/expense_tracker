@@ -1,6 +1,6 @@
 # LedgerLeaf Privacy Policy
 
-Last updated: July 19, 2026
+Last updated: July 25, 2026
 
 LedgerLeaf is designed to work without an account. Transaction amounts, categories, notes, merchants, currencies, budgets, and preferences are stored locally on your device.
 
@@ -16,7 +16,11 @@ You may also select a LedgerLeaf CSV backup to restore transactions. The selecte
 
 ## Receipt scanning
 
-Receipt scanning uses Apple's system photo picker and on-device Vision text recognition. Selected images are processed temporarily to suggest an amount, merchant, and date. LedgerLeaf does not upload or retain the receipt image.
+Receipt scanning uses Apple's system photo picker and on-device Vision text recognition. Selected images are processed locally to suggest an amount, merchant, and date. When you save an imported receipt, its image is retained locally with the transaction and included in a complete backup. LedgerLeaf never uploads it.
+
+## Voice entry
+
+Voice entry is optional. If used, LedgerLeaf requests microphone and speech-recognition permission through iOS and converts speech into editable transaction text. LedgerLeaf does not operate the microphone in the background or send recordings to the developer. Apple’s speech-recognition service may process speech according to the device language, operating-system capabilities, and Apple’s policies.
 
 ## Privacy lock
 

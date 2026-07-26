@@ -10,6 +10,7 @@ struct AddTransactionView: View {
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @AppStorage(MerchantRuleStore.storageKey) private var merchantRulesJSON = ""
     @AppStorage(TransactionTemplateStore.storageKey) private var templatesJSON = ""
+    @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
     private let transaction: Transaction?
     private let isDuplicate: Bool
     private let isTemplate: Bool
@@ -30,6 +31,11 @@ struct AddTransactionView: View {
     @State private var appliedRuleKey = ""
     @State private var saveAsTemplate = false
     @State private var templateName = ""
+    @State private var receiptImageData: Data?
+    @State private var splits: [TransactionSplit]
+    @State private var refundForID: UUID?
+    @State private var showingSplitEditor = false
+    @State private var contributionGoalID = ""
     private let receiptScanner = ReceiptScanner()
 
     init(transaction: Transaction? = nil) {
@@ -45,6 +51,10 @@ struct AddTransactionView: View {
         _merchant = State(initialValue: transaction?.merchant ?? "")
         _notes = State(initialValue: transaction?.notes ?? "")
         _tagsText = State(initialValue: transaction?.tags.joined(separator: ", ") ?? "")
+        _receiptImageData = State(initialValue: transaction?.receiptImageData)
+        _splits = State(initialValue: transaction?.splits ?? [])
+        _refundForID = State(initialValue: transaction?.refundForID)
+        _contributionGoalID = State(initialValue: "")
     }
 
     init(startingType: TransactionType) {
@@ -55,6 +65,8 @@ struct AddTransactionView: View {
         _payment = State(initialValue: .cash); _transactionCurrency = State(initialValue: CurrencyCatalog.defaultCode)
         _date = State(initialValue: .now); _merchant = State(initialValue: ""); _notes = State(initialValue: "")
         _tagsText = State(initialValue: "")
+        _receiptImageData = State(initialValue: nil); _splits = State(initialValue: []); _refundForID = State(initialValue: nil)
+        _contributionGoalID = State(initialValue: "")
     }
 
     init(copying source: Transaction) {
@@ -70,6 +82,8 @@ struct AddTransactionView: View {
         _merchant = State(initialValue: source.merchant)
         _notes = State(initialValue: source.notes)
         _tagsText = State(initialValue: source.tags.joined(separator: ", "))
+        _receiptImageData = State(initialValue: source.receiptImageData); _splits = State(initialValue: source.splits); _refundForID = State(initialValue: nil)
+        _contributionGoalID = State(initialValue: "")
     }
 
     init(template: TransactionTemplate) {
@@ -85,6 +99,22 @@ struct AddTransactionView: View {
         _merchant = State(initialValue: template.merchant)
         _notes = State(initialValue: template.notes)
         _tagsText = State(initialValue: template.tags.joined(separator: ", "))
+        _receiptImageData = State(initialValue: nil); _splits = State(initialValue: []); _refundForID = State(initialValue: nil)
+        _contributionGoalID = State(initialValue: "")
+    }
+
+    init(refunding source: Transaction) {
+        self.transaction = nil; self.isDuplicate = true; self.isTemplate = false
+        _type = State(initialValue: .income)
+        _amount = State(initialValue: String(format: "%.2f", source.amount))
+        _categoryID = State(initialValue: ExpenseCategory.refund.rawValue)
+        _payment = State(initialValue: source.paymentMethod)
+        _transactionCurrency = State(initialValue: source.currencyCode ?? CurrencyCatalog.defaultCode)
+        _date = State(initialValue: .now); _merchant = State(initialValue: source.merchant)
+        _notes = State(initialValue: "Refund for transaction on \(source.transactionDate.formatted(date: .abbreviated, time: .omitted))")
+        _tagsText = State(initialValue: source.tags.joined(separator: ", "))
+        _receiptImageData = State(initialValue: nil); _splits = State(initialValue: []); _refundForID = State(initialValue: source.id)
+        _contributionGoalID = State(initialValue: "")
     }
 
     var body: some View {
@@ -109,6 +139,13 @@ struct AddTransactionView: View {
                     .disabled(isScanningReceipt)
                     .accessibilityIdentifier("scanReceipt")
                     if isScanningReceipt { ProgressView().frame(maxWidth: .infinity) }
+                    if receiptImageData != nil {
+                        HStack {
+                            Label("Receipt attached", systemImage: "paperclip")
+                            Spacer()
+                            Button("Remove", role: .destructive) { receiptImageData = nil }
+                        }
+                    }
                 }
                 Section("Details") {
                     Picker("Category", selection: $categoryID) {
@@ -161,11 +198,51 @@ struct AddTransactionView: View {
                         }
                     }
                 }
+                if type == .expense {
+                    Section("Split Transaction") {
+                        Button(splits.isEmpty ? "Split Across Categories" : "Edit \(splits.count) Splits") {
+                            showingSplitEditor = true
+                        }
+                        .accessibilityIdentifier("splitTransactionButton")
+                        if !splits.isEmpty {
+                            ForEach(splits) { split in
+                                HStack {
+                                    Text(CustomCategoryCatalog.presentation(
+                                        for: split.categoryID, type: .expense,
+                                        custom: CustomCategoryCatalog.decode(customCategoriesJSON)).name)
+                                    Spacer()
+                                    Text(AppFormat.money(split.amount, currencyCode: transactionCurrency))
+                                }.font(.caption)
+                            }
+                        }
+                    }
+                }
+                if transaction == nil && type == .expense && !matchingSavingsGoals.isEmpty {
+                    Section("Savings Goal") {
+                        Picker("Count toward goal", selection: $contributionGoalID) {
+                            Text("None").tag("")
+                            ForEach(matchingSavingsGoals) { Text($0.name).tag($0.id.uuidString) }
+                        }
+                        Text("The transaction amount will also be added to the selected goal’s progress.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                if let transaction, !transaction.revisionHistory.isEmpty {
+                    Section("History") {
+                        NavigationLink("View Change History") { TransactionHistoryView(transaction: transaction) }
+                    }
+                }
             }.navigationTitle(isTemplate ? "Use Quick Template" : (isDuplicate ? "Duplicate Transaction" : (transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction")))).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveTransactionButton") } }
                 .alert(alertTitle, isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
                 .onChange(of: receiptItem) { _, item in if let item { scanReceipt(item) } }
                 .onAppear { if transaction == nil && !isDuplicate { transactionCurrency = currencyCode } }
+                .sheet(isPresented: $showingSplitEditor) {
+                    SplitTransactionEditor(total: DomainLogic.parseAmount(amount) ?? 0,
+                                           currencyCode: transactionCurrency, initialSplits: splits) {
+                        splits = $0
+                    }
+                }
         }
     }
     private func save() {
@@ -178,16 +255,27 @@ struct AddTransactionView: View {
             errorMessage = "Enter a name for this reusable template."
             return
         }
+        guard splits.isEmpty || TransactionMetadata.validSplits(splits, total: value) else {
+            alertTitle = "Split Amounts Don’t Match"
+            errorMessage = "Split amounts must add up to \(AppFormat.money(value, currencyCode: transactionCurrency))."
+            return
+        }
         if let transaction {
+            transaction.recordRevision()
             transaction.amount = value; transaction.type = type; transaction.categoryRaw = categoryID
             transaction.paymentMethod = payment; transaction.currencyCode = transactionCurrency
             transaction.transactionDate = date; transaction.merchant = cleanMerchant
             transaction.notes = cleanNotes; transaction.updatedAt = .now
             transaction.tags = TransactionTags.parse(tagsText)
+            transaction.receiptImageData = receiptImageData
+            transaction.splits = splits
         } else {
             let newTransaction = Transaction(amount: value, type: type, category: ExpenseCategory.cases(for: type)[0], paymentMethod: payment, currencyCode: transactionCurrency, transactionDate: date, merchant: cleanMerchant, notes: cleanNotes)
             newTransaction.categoryRaw = categoryID
             newTransaction.tags = TransactionTags.parse(tagsText)
+            newTransaction.receiptImageData = receiptImageData
+            newTransaction.splits = splits
+            newTransaction.refundForID = refundForID
             context.insert(newTransaction)
         }
         do {
@@ -204,6 +292,13 @@ struct AddTransactionView: View {
                 templatesJSON = TransactionTemplateStore.encode(
                     TransactionTemplateStore.upserting(template, in: TransactionTemplateStore.decode(templatesJSON)))
             }
+            if let goalID = UUID(uuidString: contributionGoalID) {
+                var goals = SavingsGoalStore.decode(savingsGoalsJSON)
+                if let index = goals.firstIndex(where: { $0.id == goalID && $0.currencyCode == transactionCurrency }) {
+                    goals[index].savedAmount += value
+                    savingsGoalsJSON = SavingsGoalStore.encode(goals)
+                }
+            }
             dismiss()
         } catch { alertTitle = "Couldn’t Save"; errorMessage = error.localizedDescription }
     }
@@ -214,6 +309,7 @@ struct AddTransactionView: View {
             defer { isScanningReceipt = false; receiptItem = nil }
             do {
                 guard let data = try await item.loadTransferable(type: Data.self) else { throw ReceiptScanner.ScanError.invalidImage }
+                receiptImageData = data
                 let result = try await receiptScanner.scan(data: data)
                 if amount.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, let scanned = result.amount { amount = String(format: "%.2f", scanned) }
                 if merchant.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, let scanned = result.merchant { merchant = scanned }
@@ -227,11 +323,16 @@ struct AddTransactionView: View {
     }
 
     private var suggestedTags: [String] {
-        let counts = Dictionary(grouping: existingTransactions.flatMap(\.tags), by: { $0.lowercased() })
+        let counts = Dictionary(grouping: existingTransactions.filter { !$0.isDeleted }.flatMap(\.tags), by: { $0.lowercased() })
         return counts.sorted {
             if $0.value.count == $1.value.count { return $0.key < $1.key }
             return $0.value.count > $1.value.count
         }.prefix(6).compactMap { $0.value.first }
+    }
+    private var matchingSavingsGoals: [SavingsGoal] {
+        SavingsGoalStore.decode(savingsGoalsJSON).filter {
+            $0.currencyCode == transactionCurrency && $0.savedAmount < $0.targetAmount
+        }
     }
 
     private func toggleSuggestedTag(_ tag: String) {

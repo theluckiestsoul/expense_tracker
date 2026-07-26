@@ -32,6 +32,7 @@ struct SettingsView: View {
     @AppStorage(AppLanguage.storageKey) private var languageCode = ""
     @AppStorage(AppTheme.storageKey) private var themeRaw = AppTheme.system.rawValue
     @AppStorage(PrivacyLock.storageKey) private var privacyLockEnabled = false
+    @AppStorage("privacyShieldEnabled") private var privacyShieldEnabled = true
     @AppStorage(CustomCategoryCatalog.storageKey) private var customCategoriesJSON = ""
     @AppStorage(RecurringTransactionStore.storageKey) private var recurringTransactionsJSON = ""
     @AppStorage(BillReminderService.enabledKey) private var billRemindersEnabled = false
@@ -40,6 +41,9 @@ struct SettingsView: View {
     @AppStorage(SavingsGoalStore.storageKey) private var savingsGoalsJSON = ""
     @AppStorage(MerchantRuleStore.storageKey) private var merchantRulesJSON = ""
     @AppStorage(TransactionTemplateStore.storageKey) private var templatesJSON = ""
+    @AppStorage(BudgetWorkspaceStore.storageKey) private var budgetWorkspacesJSON = ""
+    @AppStorage(EnvelopeStore.storageKey) private var envelopesJSON = ""
+    @AppStorage(BankImportProfileStore.storageKey) private var bankImportProfilesJSON = ""
     @AppStorage(OnboardingCoachMark.completionKey) private var hasCompletedOnboarding = false
     @State private var exporting = false
     @State private var csvExportKind: CSVExportKind = .transactions
@@ -83,6 +87,8 @@ struct SettingsView: View {
                         get: { privacyLockEnabled },
                         set: { updatePrivacyLock($0) }
                     ))
+                    Toggle("Hide Data in App Switcher", isOn: $privacyShieldEnabled)
+                        .accessibilityIdentifier("privacyShieldToggle")
                 }
                 Section("Plan & Organize") {
                     NavigationLink("Custom Categories") { CustomCategoriesView() }
@@ -104,14 +110,26 @@ struct SettingsView: View {
                     .accessibilityIdentifier("billRemindersToggle")
                     NavigationLink("Recurring Transactions") { RecurringTransactionsView() }
                         .accessibilityIdentifier("recurringTransactionsLink")
+                    NavigationLink("Batch Receipt Scan") { BatchReceiptImportView() }
+                        .accessibilityIdentifier("batchReceiptScanLink")
+                    NavigationLink("Budgets & Envelopes") { BudgetWorkspacesView() }
+                        .accessibilityIdentifier("budgetWorkspacesLink")
+                    NavigationLink("Recently Deleted") { TrashView() }
+                        .accessibilityIdentifier("recentlyDeletedLink")
                 }
                 Section("Data & Backup") {
                     Button("Export Complete Backup") { exportingBackup = true }
                         .accessibilityIdentifier("exportCompleteBackup")
                     Button("Restore Complete Backup") { importingBackup = true }
                         .accessibilityIdentifier("restoreCompleteBackup")
+                    NavigationLink("Encrypted Backup") {
+                        SecureBackupView(backup: completeBackup) { pendingBackup = $0 }
+                    }
+                    .accessibilityIdentifier("encryptedBackupLink")
                     Button("Export Transactions (CSV)") { csvExportKind = .transactions; exporting = true }.disabled(transactions.isEmpty)
                     Button("Import Transactions (CSV)") { importing = true }
+                    NavigationLink("Import Bank CSV") { BankCSVImportView() }
+                        .accessibilityIdentifier("bankCSVMappingLink")
                     NavigationLink("CSV Import Guide") { CSVImportGuideView(downloadTemplate: { csvExportKind = .template; exporting = true }) }
                         .accessibilityIdentifier("csvImportGuide")
                     Text("CSV imports add transactions only and skip duplicates. Complete Backup includes budgets, goals, schedules, and preferences.")
@@ -196,7 +214,10 @@ struct SettingsView: View {
             savingsGoals: SavingsGoalStore.decode(savingsGoalsJSON),
             recurringTransactions: RecurringTransactionStore.decode(recurringTransactionsJSON),
             merchantRules: MerchantRuleStore.decode(merchantRulesJSON),
-            transactionTemplates: TransactionTemplateStore.decode(templatesJSON)
+            transactionTemplates: TransactionTemplateStore.decode(templatesJSON),
+            budgetWorkspaces: BudgetWorkspaceStore.decode(budgetWorkspacesJSON),
+            envelopes: EnvelopeStore.decode(envelopesJSON),
+            bankImportProfiles: BankImportProfileStore.decode(bankImportProfilesJSON)
         )
     }
     private var version: String {
@@ -230,6 +251,13 @@ struct SettingsView: View {
             transaction.recurringSourceID = record.recurringSourceID; transaction.accountID = record.accountID
             transaction.transferID = record.transferID
             transaction.tags = record.tags ?? []
+            transaction.receiptImageData = record.receiptImageData
+            transaction.splits = record.splits ?? []
+            transaction.refundForID = record.refundForID
+            transaction.deletedAt = record.deletedAt
+            transaction.revisionHistory = record.revisionHistory ?? []
+            transaction.locationName = record.locationName
+            transaction.latitude = record.latitude; transaction.longitude = record.longitude
             if existing[record.id] == nil { context.insert(transaction) }
         }
         do {
@@ -244,6 +272,9 @@ struct SettingsView: View {
             recurringTransactionsJSON = RecurringTransactionStore.encode(backup.recurringTransactions)
             if let merchantRules = backup.merchantRules { merchantRulesJSON = MerchantRuleStore.encode(merchantRules) }
             if let templates = backup.transactionTemplates { templatesJSON = TransactionTemplateStore.encode(templates) }
+            if let values = backup.budgetWorkspaces { budgetWorkspacesJSON = BudgetWorkspaceStore.encode(values) }
+            if let values = backup.envelopes { envelopesJSON = EnvelopeStore.encode(values) }
+            if let values = backup.bankImportProfiles { bankImportProfilesJSON = BankImportProfileStore.encode(values) }
             billRemindersEnabled = false
             pendingBackup = nil; statusTitle = "Restore Complete"
             statusMessage = "Restored \(backup.transactions.count) transactions and all included LedgerLeaf settings. Re-enable reminders if you want notifications on this device."

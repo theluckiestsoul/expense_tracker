@@ -13,7 +13,7 @@ struct ReportsView: View {
     @State private var insightTransaction: Transaction?
 
     private var eligibleTransactions: [Transaction] {
-        transactions.filter { $0.transferID == nil && ($0.currencyCode ?? currencyCode) == currencyCode }
+        transactions.filter { !$0.isDeleted && $0.transferID == nil && ($0.currencyCode ?? currencyCode) == currencyCode }
     }
 
     private var periodTransactions: [Transaction] {
@@ -50,6 +50,20 @@ struct ReportsView: View {
                     }
                     .pickerStyle(.segmented)
                     .accessibilityIdentifier("reportPeriodPicker")
+
+                    NavigationLink {
+                        CustomReportView()
+                    } label: {
+                        Label("Custom Date Report & PDF", systemImage: "calendar.badge.clock")
+                    }
+                    .accessibilityIdentifier("customReportLink")
+
+                    NavigationLink {
+                        AdvancedInsightsView()
+                    } label: {
+                        Label("Financial Insights Hub", systemImage: "sparkles")
+                    }
+                    .accessibilityIdentifier("advancedInsightsLink")
 
                     HStack(spacing: 12) {
                         totalCard(title: "Expense", amount: periodTransactions.expenses, color: .red)

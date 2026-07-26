@@ -14,9 +14,10 @@ struct DashboardView: View {
     @AppStorage(TransactionTemplateStore.storageKey) private var templatesJSON = ""
     @State private var addingType: TransactionType?
     @State private var selectedTemplate: TransactionTemplate?
+    @State private var showingQuickEntry = false
     private var theme: AppTheme { AppTheme(rawValue: themeRaw) ?? .system }
     private var currencyTransactions: [Transaction] {
-        transactions.filter { ($0.currencyCode ?? currencyCode) == currencyCode }
+        transactions.filter { !$0.isDeleted && ($0.currencyCode ?? currencyCode) == currencyCode }
     }
     private var month: [Transaction] { currencyTransactions.inCurrentMonth() }
     private var previousMonthExpenses: Double {
@@ -102,6 +103,11 @@ struct DashboardView: View {
                             .coachMarkTarget(.expenseButton)
                         quickAction("Income", symbol: "arrow.down.left", color: .green) { addingType = .income }
                     }
+                    Button { showingQuickEntry = true } label: {
+                        Label("Type or Speak a Transaction", systemImage: "waveform.and.mic")
+                            .font(.subheadline.weight(.semibold)).frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered).accessibilityIdentifier("dashboardQuickEntry")
 
                     if !quickTemplates.isEmpty {
                         HStack {
@@ -223,6 +229,7 @@ struct DashboardView: View {
                 }
             .sheet(item: $addingType) { AddTransactionView(startingType: $0) }
             .sheet(item: $selectedTemplate) { AddTransactionView(template: $0) }
+            .sheet(isPresented: $showingQuickEntry) { QuickEntryView() }
         }
     }
     private func quickAction(_ title: LocalizedStringKey, symbol: String, color: Color, action: @escaping () -> Void) -> some View {

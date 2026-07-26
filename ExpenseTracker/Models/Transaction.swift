@@ -89,6 +89,14 @@ final class Transaction {
     var accountID: String?
     var transferID: UUID?
     var tagsRaw: String?
+    @Attribute(.externalStorage) var receiptImageData: Data?
+    var splitsRaw: String?
+    var refundForID: UUID?
+    var deletedAt: Date?
+    var revisionHistoryRaw: String?
+    var locationName: String?
+    var latitude: Double?
+    var longitude: Double?
 
     var type: TransactionType { get { TransactionType(rawValue: typeRaw) ?? .expense } set { typeRaw = newValue.rawValue } }
     var category: ExpenseCategory {
@@ -108,12 +116,23 @@ final class Transaction {
         get { TransactionTags.decode(tagsRaw) }
         set { tagsRaw = TransactionTags.encode(newValue) }
     }
+    var splits: [TransactionSplit] {
+        get { TransactionMetadata.decode([TransactionSplit].self, from: splitsRaw) ?? [] }
+        set { splitsRaw = TransactionMetadata.encode(newValue) }
+    }
+    var revisionHistory: [TransactionRevision] {
+        get { TransactionMetadata.decode([TransactionRevision].self, from: revisionHistoryRaw) ?? [] }
+        set { revisionHistoryRaw = TransactionMetadata.encode(Array(newValue.suffix(20))) }
+    }
+    var isDeleted: Bool { deletedAt != nil }
 
     init(amount: Double, type: TransactionType, category: ExpenseCategory, paymentMethod: PaymentMethod, currencyCode: String, transactionDate: Date, merchant: String, notes: String = "") {
         id = UUID(); self.amount = amount; typeRaw = type.rawValue; categoryRaw = category.rawValue
         paymentMethodRaw = paymentMethod.rawValue; self.currencyCode = currencyCode; self.transactionDate = transactionDate
         self.merchant = merchant; self.notes = notes; createdAt = .now; updatedAt = .now; recurringSourceID = nil; accountID = nil; transferID = nil
         tagsRaw = nil
+        receiptImageData = nil; splitsRaw = nil; refundForID = nil; deletedAt = nil
+        revisionHistoryRaw = nil; locationName = nil; latitude = nil; longitude = nil
     }
 }
 
@@ -126,7 +145,20 @@ extension Transaction {
         copy.categoryRaw = categoryRaw
         copy.accountID = accountID
         copy.tags = tags
+        copy.splits = splits
         return copy
+    }
+
+    func recordRevision(at date: Date = .now) {
+        let revision = TransactionRevision(changedAt: date, amount: amount, type: type, categoryID: categoryRaw,
+                                           paymentMethod: paymentMethod, merchant: merchant, notes: notes, tags: tags)
+        revisionHistory.append(revision)
+    }
+
+    func restore(_ revision: TransactionRevision) {
+        amount = revision.amount; type = revision.type; categoryRaw = revision.categoryID
+        paymentMethod = revision.paymentMethod; merchant = revision.merchant; notes = revision.notes
+        tags = revision.tags; updatedAt = .now
     }
 }
 

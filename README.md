@@ -22,7 +22,7 @@ Monthly category budgets are currency-specific and appear on the dashboard with 
 
 Existing income and expenses can be duplicated from the transaction list using a leading swipe or long press. LedgerLeaf copies the details into a review form with today's date and always creates a separate transaction.
 
-Receipt scanning uses Apple's photo picker and on-device Vision OCR to suggest the total, merchant, and date from a receipt image. Suggestions remain editable, and the selected image is neither uploaded nor stored.
+Receipt scanning uses Apple's photo picker and on-device Vision OCR to suggest the total, merchant, and date from a receipt image. Suggestions remain editable, receipt images can be retained with the transaction, and batch import can review up to 20 receipts without uploading them.
 
 Optional Smart Merchant Rules remember a merchant’s transaction type, category, and payment method. Matching happens on-device, suggestions remain editable before saving, and learned rules can be reviewed or deleted from Settings.
 
@@ -37,6 +37,14 @@ Reports include top-merchant summaries and a browsable monthly spending calendar
 Transaction selection supports safely tagging or deleting multiple records in one operation. Bulk tags are merged with existing labels, and destructive actions still require confirmation.
 
 Individual transactions can be deleted with a familiar trailing swipe or from the long-press menu. LedgerLeaf asks for confirmation before removing the entry.
+
+Deletion is recoverable from Recently Deleted. Edits retain a bounded change history, refunds can link back to their original expense, and one payment can be split across multiple categories.
+
+Quick Entry understands phrases such as “Lunch 350 at Green Cafe yesterday using UPI,” supports optional voice dictation, and is available through Siri and Shortcuts. Recognition and parsing happen on the device.
+
+Advanced planning includes multiple named budgets, envelope allocations, savings contributions, reusable bank-CSV column profiles, exact-date custom reports, and shareable PDF summaries. Password-encrypted complete backups use authenticated encryption.
+
+The Financial Insights hub provides a financial-health score, no-spend streak, 90-day cash-flow forecast, annual summary, likely-subscription detection, price-change alerts, suggested category budgets, merchant details, tag and weekday analysis, and a bill calendar.
 
 Reports support weekly, monthly, yearly, and all-time views with income-versus-expense cash-flow charts, net cash flow, savings rate, period-aware category breakdowns, and income/spending comparisons against the previous matching period.
 
@@ -62,6 +70,6 @@ The interface automatically follows the user's supported iOS language. Current l
 - Override the device with `make run SIMULATOR='iPhone 15'`.
 - `make doctor` reports whether the required Apple tools are installed.
 
-Transactions retain their original ISO currency, while dashboard and report totals use the selected default currency. Data and preferences stay on device with SwiftData/AppStorage. CSV export uses the system share sheet. Settings includes a CSV import guide and a header-only template; CSV imports merge transactions and skip duplicates. The app does not track users or transmit personal data.
+Transactions retain their original ISO currency, while dashboard and report totals use the selected default currency. Data and preferences stay on device with SwiftData/AppStorage. CSV export uses the system share sheet. Settings includes a CSV import guide, a header-only template, and a flexible bank CSV mapper; imports merge transactions and skip duplicates. The app does not track users or transmit personal data. The optional privacy shield hides financial details in the iOS app switcher.
 
 Complete LedgerLeaf backups preserve transactions, custom categories, budgets, savings goals, recurring schedules, and core preferences in one versioned JSON file. Legacy account metadata remains readable when restoring backups created by earlier versions. Restore validates the full file and asks before replacing local data; biometric and notification permissions remain specific to each device.
