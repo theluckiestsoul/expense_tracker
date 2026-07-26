@@ -22,6 +22,10 @@ Receipt scanning uses Apple's system photo picker and on-device Vision text reco
 
 Voice entry is optional. If used, LedgerLeaf requests microphone and speech-recognition permission through iOS and converts speech into editable transaction text. LedgerLeaf does not operate the microphone in the background or send recordings to the developer. Apple’s speech-recognition service may process speech according to the device language, operating-system capabilities, and Apple’s policies.
 
+## Nearby-place suggestions
+
+When you tap Use Current Place, LedgerLeaf requests one approximate foreground location and uses Apple's geocoder to suggest a place name. The chosen label and coordinates are stored locally with that transaction and may be included in complete backups. LedgerLeaf does not request background location, track movement, or send location data to the developer.
+
 ## Privacy lock
 
 If you enable Privacy Lock, LedgerLeaf asks iOS to authenticate you with Face ID, Touch ID, or the device passcode. Authentication is performed by the operating system. LedgerLeaf does not receive or store biometric information.

@@ -493,4 +493,14 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(try EncryptedBackup.decrypt(encrypted, password: "correct horse battery staple"), original)
         XCTAssertThrowsError(try EncryptedBackup.decrypt(encrypted, password: "wrong password"))
     }
+
+    @MainActor
+    func testLocationSuggestionChoosesTheMostSpecificAvailableLabel() {
+        XCTAssertEqual(LocationSuggestionService.placeLabel(name: "Green Cafe", locality: "Pune", area: "Pune"),
+                       "Green Cafe")
+        XCTAssertEqual(LocationSuggestionService.placeLabel(name: " ", locality: "Pune", area: "Maharashtra"),
+                       "Pune")
+        XCTAssertEqual(LocationSuggestionService.placeLabel(name: nil, locality: nil, area: nil),
+                       "Current Location")
+    }
 }

@@ -36,6 +36,10 @@ struct AddTransactionView: View {
     @State private var refundForID: UUID?
     @State private var showingSplitEditor = false
     @State private var contributionGoalID = ""
+    @State private var locationName = ""
+    @State private var latitude: Double?
+    @State private var longitude: Double?
+    @StateObject private var locationService = LocationSuggestionService()
     private let receiptScanner = ReceiptScanner()
 
     init(transaction: Transaction? = nil) {
@@ -159,6 +163,17 @@ struct AddTransactionView: View {
                     TextField("Merchant / description", text: $merchant).textInputAutocapitalization(.words)
                         .accessibilityIdentifier("merchantField")
                         .onChange(of: merchant) { _, value in applyRule(for: value) }
+                    Button {
+                        locationService.requestPlace()
+                    } label: {
+                        Label(locationService.isLoading ? "Finding Nearby Place…" : "Use Current Place",
+                              systemImage: "location.fill")
+                    }
+                    .disabled(locationService.isLoading)
+                    .accessibilityIdentifier("useCurrentPlace")
+                    if !locationName.isEmpty {
+                        LabeledContent("Attached Place", value: locationName)
+                    }
                 }
                 Section("Optional") {
                     TextField("Notes (optional)", text: $notes, axis: .vertical).lineLimit(2...5)
@@ -237,6 +252,26 @@ struct AddTransactionView: View {
                 .alert(alertTitle, isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
                 .onChange(of: receiptItem) { _, item in if let item { scanReceipt(item) } }
                 .onAppear { if transaction == nil && !isDuplicate { transactionCurrency = currencyCode } }
+                .onAppear {
+                    locationName = transaction?.locationName ?? ""
+                    latitude = transaction?.latitude
+                    longitude = transaction?.longitude
+                }
+                .onChange(of: locationService.suggestion) { _, suggestion in
+                    guard let suggestion else { return }
+                    locationName = suggestion.name
+                    latitude = suggestion.latitude
+                    longitude = suggestion.longitude
+                    if merchant.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        merchant = suggestion.name
+                    }
+                }
+                .onChange(of: locationService.errorMessage) { _, message in
+                    guard let message else { return }
+                    alertTitle = "Location Unavailable"
+                    errorMessage = message
+                    locationService.errorMessage = nil
+                }
                 .sheet(isPresented: $showingSplitEditor) {
                     SplitTransactionEditor(total: DomainLogic.parseAmount(amount) ?? 0,
                                            currencyCode: transactionCurrency, initialSplits: splits) {
@@ -269,6 +304,9 @@ struct AddTransactionView: View {
             transaction.tags = TransactionTags.parse(tagsText)
             transaction.receiptImageData = receiptImageData
             transaction.splits = splits
+            transaction.locationName = locationName.isEmpty ? nil : locationName
+            transaction.latitude = latitude
+            transaction.longitude = longitude
         } else {
             let newTransaction = Transaction(amount: value, type: type, category: ExpenseCategory.cases(for: type)[0], paymentMethod: payment, currencyCode: transactionCurrency, transactionDate: date, merchant: cleanMerchant, notes: cleanNotes)
             newTransaction.categoryRaw = categoryID
@@ -276,6 +314,9 @@ struct AddTransactionView: View {
             newTransaction.receiptImageData = receiptImageData
             newTransaction.splits = splits
             newTransaction.refundForID = refundForID
+            newTransaction.locationName = locationName.isEmpty ? nil : locationName
+            newTransaction.latitude = latitude
+            newTransaction.longitude = longitude
             context.insert(newTransaction)
         }
         do {

@@ -42,6 +42,8 @@ Deletion is recoverable from Recently Deleted. Edits retain a bounded change his
 
 Quick Entry understands phrases such as “Lunch 350 at Green Cafe yesterday using UPI,” supports optional voice dictation, and is available through Siri and Shortcuts. Recognition and parsing happen on the device.
 
+Optional nearby-place assistance can attach the current place to a transaction and fill an empty merchant field. It requests location only after the user taps the control and never tracks in the background.
+
 Advanced planning includes multiple named budgets, envelope allocations, savings contributions, reusable bank-CSV column profiles, exact-date custom reports, and shareable PDF summaries. Password-encrypted complete backups use authenticated encryption.
 
 The Financial Insights hub provides a financial-health score, no-spend streak, 90-day cash-flow forecast, annual summary, likely-subscription detection, price-change alerts, suggested category budgets, merchant details, tag and weekday analysis, and a bill calendar.
