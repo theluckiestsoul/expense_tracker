@@ -44,6 +44,8 @@ Quick Entry understands phrases such as “Lunch 350 at Green Cafe yesterday usi
 
 Optional nearby-place assistance can attach the current place to a transaction and fill an empty merchant field. It requests location only after the user taps the control and never tracks in the background.
 
+Before a new entry is saved, duplicate protection checks amount, currency, type, date, and merchant or category. Likely repeats are shown for review, while intentional duplicates can still be saved.
+
 Advanced planning includes multiple named budgets, envelope allocations, savings contributions, reusable bank-CSV column profiles, exact-date custom reports, and shareable PDF summaries. Password-encrypted complete backups use authenticated encryption.
 
 The Financial Insights hub provides a financial-health score, no-spend streak, 90-day cash-flow forecast, annual summary, likely-subscription detection, price-change alerts, suggested category budgets, merchant details, tag and weekday analysis, and a bill calendar.

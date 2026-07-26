@@ -503,4 +503,27 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(LocationSuggestionService.placeLabel(name: nil, locality: nil, area: nil),
                        "Current Location")
     }
+
+    func testDuplicateDetectorIsConservativeAndIgnoresDeletedEntries() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let date = calendar.date(from: DateComponents(year: 2026, month: 7, day: 20, hour: 12))!
+        let existing = Transaction(amount: 25, type: .expense, category: .food, paymentMethod: .card,
+                                   currencyCode: "USD", transactionDate: date, merchant: "Green Cafe")
+
+        XCTAssertEqual(DuplicateTransactionDetector.likelyDuplicate(
+            amount: 25, type: .expense, currencyCode: "USD",
+            date: calendar.date(byAdding: .day, value: 1, to: date)!,
+            merchant: " green café ", categoryID: ExpenseCategory.food.rawValue,
+            among: [existing], calendar: calendar)?.id, existing.id)
+        XCTAssertNil(DuplicateTransactionDetector.likelyDuplicate(
+            amount: 26, type: .expense, currencyCode: "USD", date: date,
+            merchant: "Green Cafe", categoryID: ExpenseCategory.food.rawValue,
+            among: [existing], calendar: calendar))
+        existing.deletedAt = .now
+        XCTAssertNil(DuplicateTransactionDetector.likelyDuplicate(
+            amount: 25, type: .expense, currencyCode: "USD", date: date,
+            merchant: "Green Cafe", categoryID: ExpenseCategory.food.rawValue,
+            among: [existing], calendar: calendar))
+    }
 }

@@ -40,6 +40,8 @@ struct AddTransactionView: View {
     @State private var latitude: Double?
     @State private var longitude: Double?
     @StateObject private var locationService = LocationSuggestionService()
+    @State private var duplicateMatch: Transaction?
+    @State private var bypassDuplicateCheck = false
     private let receiptScanner = ReceiptScanner()
 
     init(transaction: Transaction? = nil) {
@@ -250,6 +252,21 @@ struct AddTransactionView: View {
             }.navigationTitle(isTemplate ? "Use Quick Template" : (isDuplicate ? "Duplicate Transaction" : (transaction == nil ? AppLanguage.localized("Add Transaction") : AppLanguage.localized("Edit Transaction")))).navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }; ToolbarItem(placement: .confirmationAction) { Button("Save", action: save).disabled(DomainLogic.parseAmount(amount) == nil).accessibilityIdentifier("saveTransactionButton") } }
                 .alert(alertTitle, isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) { Button("OK", role: .cancel) {} } message: { Text(errorMessage ?? "Unknown error") }
+                .confirmationDialog("Possible Duplicate", isPresented: Binding(
+                    get: { duplicateMatch != nil },
+                    set: { if !$0 { duplicateMatch = nil } }
+                ), titleVisibility: .visible) {
+                    Button("Save Anyway") {
+                        duplicateMatch = nil
+                        bypassDuplicateCheck = true
+                        save()
+                    }
+                    Button("Review Entry", role: .cancel) { duplicateMatch = nil }
+                } message: {
+                    if let duplicateMatch {
+                        Text("A matching \(duplicateMatch.type.title.lowercased()) from \(duplicateMatch.transactionDate.formatted(date: .abbreviated, time: .omitted)) already exists.")
+                    }
+                }
                 .onChange(of: receiptItem) { _, item in if let item { scanReceipt(item) } }
                 .onAppear { if transaction == nil && !isDuplicate { transactionCurrency = currencyCode } }
                 .onAppear {
@@ -295,6 +312,14 @@ struct AddTransactionView: View {
             errorMessage = "Split amounts must add up to \(AppFormat.money(value, currencyCode: transactionCurrency))."
             return
         }
+        if transaction == nil && !bypassDuplicateCheck,
+           let match = DuplicateTransactionDetector.likelyDuplicate(
+            amount: value, type: type, currencyCode: transactionCurrency, date: date,
+            merchant: cleanMerchant, categoryID: categoryID, among: existingTransactions) {
+            duplicateMatch = match
+            return
+        }
+        bypassDuplicateCheck = false
         if let transaction {
             transaction.recordRevision()
             transaction.amount = value; transaction.type = type; transaction.categoryRaw = categoryID
