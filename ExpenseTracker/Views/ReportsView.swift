@@ -65,6 +65,13 @@ struct ReportsView: View {
                     }
                     .accessibilityIdentifier("advancedInsightsLink")
 
+                    NavigationLink {
+                        MoneyCheckupView()
+                    } label: {
+                        Label("10-Point Money Checkup", systemImage: "checkmark.seal")
+                    }
+                    .accessibilityIdentifier("moneyCheckupLink")
+
                     HStack(spacing: 12) {
                         totalCard(title: "Expense", amount: periodTransactions.expenses, color: .red)
                         totalCard(title: "Income", amount: periodTransactions.income, color: .green)

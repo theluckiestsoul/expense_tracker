@@ -50,6 +50,8 @@ Advanced planning includes multiple named budgets, envelope allocations, savings
 
 The Financial Insights hub provides a financial-health score, no-spend streak, 90-day cash-flow forecast, annual summary, likely-subscription detection, price-change alerts, suggested category budgets, merchant details, tag and weekday analysis, and a bill calendar.
 
+The 10-point Money Checkup adds spending pace, a safe daily allowance, month-end projection, unusual-expense review, merchant concentration, weekend premium, income stability, no-spend performance, tappable data-quality cleanup, and six-month savings consistency.
+
 Reports support weekly, monthly, yearly, and all-time views with income-versus-expense cash-flow charts, net cash flow, savings rate, period-aware category breakdowns, and income/spending comparisons against the previous matching period.
 
 Optional bill reminders schedule private, on-device notifications one day before active recurring expenses. Notification access is requested only when the user enables Bill Reminders in Settings.

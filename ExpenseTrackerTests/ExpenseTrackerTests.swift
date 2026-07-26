@@ -526,4 +526,40 @@ final class ExpenseTrackerTests: XCTestCase {
             merchant: "Green Cafe", categoryID: ExpenseCategory.food.rawValue,
             among: [existing], calendar: calendar))
     }
+
+    func testMoneyCheckupCalculatesTenDiagnostics() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 7, day: 15, hour: 12))!
+        func date(_ month: Int, _ day: Int) -> Date {
+            calendar.date(from: DateComponents(year: 2026, month: month, day: day, hour: 12))!
+        }
+        let values = [
+            Transaction(amount: 100, type: .income, category: .salary, paymentMethod: .bank,
+                        currencyCode: "USD", transactionDate: date(7, 1), merchant: "Employer"),
+            Transaction(amount: 30, type: .expense, category: .food, paymentMethod: .card,
+                        currencyCode: "USD", transactionDate: date(7, 5), merchant: "Cafe"),
+            Transaction(amount: 20, type: .expense, category: .other, paymentMethod: .cash,
+                        currencyCode: "USD", transactionDate: date(7, 6), merchant: ""),
+            Transaction(amount: 90, type: .income, category: .salary, paymentMethod: .bank,
+                        currencyCode: "USD", transactionDate: date(6, 1), merchant: "Employer"),
+            Transaction(amount: 40, type: .expense, category: .food, paymentMethod: .card,
+                        currencyCode: "USD", transactionDate: date(6, 5), merchant: "Cafe")
+        ]
+        let checkup = MoneyCheckupCalculator.snapshot(
+            transactions: values, monthlyBudget: 310, currencyCode: "USD", now: now, calendar: calendar
+        )
+
+        XCTAssertEqual(checkup.monthExpenses, 50)
+        XCTAssertEqual(checkup.previousMonthExpenses, 40)
+        XCTAssertEqual(checkup.safeDailySpend ?? -1, 260.0 / 17.0, accuracy: 0.001)
+        XCTAssertEqual(checkup.projectedMonthExpenses, 50 / 15 * 31, accuracy: 0.001)
+        XCTAssertEqual(checkup.topMerchantName, "Cafe")
+        XCTAssertEqual(checkup.topMerchantShare ?? -1, 0.6, accuracy: 0.001)
+        XCTAssertEqual(checkup.noSpendDays, 13)
+        XCTAssertEqual(checkup.incompleteTransactions.count, 1)
+        XCTAssertEqual(checkup.positiveSavingsMonths, 2)
+        XCTAssertEqual(checkup.observedSavingsMonths, 2)
+        XCTAssertNotNil(checkup.incomeVariation)
+    }
 }
