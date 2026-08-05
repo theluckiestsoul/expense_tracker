@@ -54,7 +54,7 @@ struct ReportsView: View {
                     NavigationLink {
                         CustomReportView()
                     } label: {
-                        Label("Custom Date Report & PDF", systemImage: "calendar.badge.clock")
+                        Label("Custom Report Builder", systemImage: "slider.horizontal.3")
                     }
                     .accessibilityIdentifier("customReportLink")
 

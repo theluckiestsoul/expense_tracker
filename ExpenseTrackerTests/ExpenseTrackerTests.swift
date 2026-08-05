@@ -562,4 +562,31 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(checkup.observedSavingsMonths, 2)
         XCTAssertNotNil(checkup.incomeVariation)
     }
+
+    func testCustomReportFiltersAndPresetsRoundTrip() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let start = calendar.date(from: DateComponents(year: 2026, month: 8, day: 1))!
+        let end = calendar.date(from: DateComponents(year: 2026, month: 8, day: 5))!
+        let cafe = Transaction(amount: 12, type: .expense, category: .food, paymentMethod: .card,
+                               currencyCode: "USD", transactionDate: start, merchant: "Green Café")
+        let shop = Transaction(amount: 20, type: .expense, category: .shopping, paymentMethod: .cash,
+                               currencyCode: "USD", transactionDate: start, merchant: "Market")
+        let income = Transaction(amount: 100, type: .income, category: .salary, paymentMethod: .bank,
+                                 currencyCode: "USD", transactionDate: end, merchant: "Employer")
+        let result = CustomReportFilter.transactions(
+            from: [cafe, shop, income], currencyCode: "USD", startDate: start, endDate: end,
+            typeRaw: TransactionType.expense.rawValue, categoryID: ExpenseCategory.food.rawValue,
+            merchantQuery: "green cafe", calendar: calendar
+        )
+        XCTAssertEqual(result.map(\.id), [cafe.id])
+
+        let preset = CustomReportPreset(id: UUID(), name: "Cafe report", dateRange: .custom,
+                                        startDate: start, endDate: end, typeRaw: "expense",
+                                        categoryID: ExpenseCategory.food.rawValue, merchantQuery: "Cafe")
+        let decoded = CustomReportPresetStore.decode(CustomReportPresetStore.encode([preset]))
+        XCTAssertEqual(decoded, [preset])
+        XCTAssertEqual(CustomReportDateRange.last7Days.dates(now: end, calendar: calendar)?.start,
+                       calendar.date(byAdding: .day, value: -6, to: end))
+    }
 }
