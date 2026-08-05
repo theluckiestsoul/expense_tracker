@@ -24,7 +24,7 @@ Voice entry is optional. If used, LedgerLeaf requests microphone and speech-reco
 
 ## Nearby-place suggestions
 
-When you tap Use Current Place, LedgerLeaf requests one approximate foreground location and uses Apple's geocoder to suggest a place name. The chosen label and coordinates are stored locally with that transaction and may be included in complete backups. LedgerLeaf does not request background location, track movement, or send location data to the developer.
+When you tap Use Current Place, LedgerLeaf requests one approximate foreground location and uses Apple's geocoder to suggest a place name. The chosen label and coordinates are stored locally with that transaction and may be included in complete backups. Saved coordinates can be displayed and grouped locally in the Spending Map. LedgerLeaf does not request background location, track movement, or send location data to the developer.
 
 ## Privacy lock
 

@@ -589,4 +589,25 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(CustomReportDateRange.last7Days.dates(now: end, calendar: calendar)?.start,
                        calendar.date(byAdding: .day, value: -6, to: end))
     }
+
+    func testLocationSpendingClustersNearbyTransactionsAndFiltersInvalidCoordinates() {
+        let cafe = Transaction(amount: 10, type: .expense, category: .food, paymentMethod: .card,
+                               currencyCode: "USD", transactionDate: .now, merchant: "Cafe")
+        cafe.locationName = "Green Cafe"; cafe.latitude = 18.5204; cafe.longitude = 73.8567
+        let nearby = Transaction(amount: 15, type: .expense, category: .food, paymentMethod: .cash,
+                                 currencyCode: "USD", transactionDate: .now, merchant: "Cafe")
+        nearby.locationName = "Cafe Side Door"; nearby.latitude = 18.5205; nearby.longitude = 73.8568
+        let office = Transaction(amount: 100, type: .income, category: .salary, paymentMethod: .bank,
+                                 currencyCode: "USD", transactionDate: .now, merchant: "Employer")
+        office.locationName = "Office"; office.latitude = 18.5300; office.longitude = 73.8700
+        let invalid = Transaction(amount: 99, type: .expense, category: .other, paymentMethod: .cash,
+                                  currencyCode: "USD", transactionDate: .now, merchant: "Unknown")
+        invalid.latitude = 200; invalid.longitude = 300
+
+        let clusters = LocationSpendingCalculator.clusters(from: [cafe, nearby, office, invalid], currencyCode: "USD")
+        XCTAssertEqual(clusters.count, 2)
+        XCTAssertEqual(clusters.first?.expenses, 25)
+        XCTAssertEqual(clusters.first?.count, 2)
+        XCTAssertEqual(clusters.last?.income, 100)
+    }
 }

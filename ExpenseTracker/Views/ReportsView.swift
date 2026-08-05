@@ -72,6 +72,13 @@ struct ReportsView: View {
                     }
                     .accessibilityIdentifier("moneyCheckupLink")
 
+                    NavigationLink {
+                        SpendingMapView()
+                    } label: {
+                        Label("Spending Map", systemImage: "map")
+                    }
+                    .accessibilityIdentifier("spendingMapLink")
+
                     HStack(spacing: 12) {
                         totalCard(title: "Expense", amount: periodTransactions.expenses, color: .red)
                         totalCard(title: "Income", amount: periodTransactions.income, color: .green)
