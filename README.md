@@ -54,6 +54,8 @@ The Financial Insights hub provides a financial-health score, no-spend streak, 9
 
 The 10-point Money Checkup adds spending pace, a safe daily allowance, month-end projection, unusual-expense review, merchant concentration, weekend premium, income stability, no-spend performance, tappable data-quality cleanup, and six-month savings consistency.
 
+The Financial Action Center privately prioritizes budget risks, bills due within seven days, unusual expenses, incomplete entries, and savings goals approaching or past their target date, with direct links to resolve each item.
+
 Reports support weekly, monthly, yearly, and all-time views with income-versus-expense cash-flow charts, net cash flow, savings rate, period-aware category breakdowns, and income/spending comparisons against the previous matching period. The custom report builder combines quick or exact date ranges with type, category, and merchant filters; configurations can be saved and the filtered result exported as PDF or CSV.
 
 Optional bill reminders schedule private, on-device notifications one day before active recurring expenses. Notification access is requested only when the user enables Bill Reminders in Settings.

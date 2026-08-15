@@ -51,6 +51,14 @@ struct DashboardView: View {
     private var quickTemplates: [TransactionTemplate] {
         TransactionTemplateStore.decode(templatesJSON).filter { $0.currencyCode == currencyCode }
     }
+    private var actionCount: Int {
+        FinancialActionCalculator.actions(
+            transactions: transactions, monthlyBudget: budget,
+            categoryBudgets: CategoryBudgetStore.decode(categoryBudgetsJSON),
+            schedules: RecurringTransactionStore.decode(recurringTransactionsJSON),
+            savingsGoals: SavingsGoalStore.decode(savingsGoalsJSON), currencyCode: currencyCode
+        ).count
+    }
 
     var body: some View {
         NavigationStack {
@@ -96,6 +104,21 @@ struct DashboardView: View {
                     if budgetStatus == .approaching || budgetStatus == .nearlyReached || budgetStatus == .exceeded {
                         budgetAlert
                     }
+
+                    NavigationLink {
+                        FinancialActionCenterView()
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: actionCount == 0 ? "checkmark.circle.fill" : "bell.badge.fill")
+                                .font(.title2).foregroundStyle(actionCount == 0 ? .green : .orange)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("Financial Action Center").font(.headline).foregroundStyle(.primary)
+                                Text(actionCount == 0 ? "No urgent actions" : "\(actionCount) item\(actionCount == 1 ? "" : "s") need attention")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(); Image(systemName: "chevron.right").foregroundStyle(.tertiary)
+                        }.padding().background(.background, in: RoundedRectangle(cornerRadius: 18))
+                    }.buttonStyle(.plain).accessibilityIdentifier("financialActionCenterLink")
 
                     sectionHeader("Quick Actions")
                     HStack(spacing: 12) {

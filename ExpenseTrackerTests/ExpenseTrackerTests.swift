@@ -610,4 +610,27 @@ final class ExpenseTrackerTests: XCTestCase {
         XCTAssertEqual(clusters.first?.count, 2)
         XCTAssertEqual(clusters.last?.income, 100)
     }
+
+    func testFinancialActionCenterRanksUrgentAndActionableItems() {
+        var calendar = Calendar(identifier: .gregorian); calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let now = calendar.date(from: DateComponents(year: 2026, month: 8, day: 15, hour: 12))!
+        let expense = Transaction(amount: 95, type: .expense, category: .food, paymentMethod: .card,
+                                  currencyCode: "USD", transactionDate: now, merchant: "")
+        let bill = RecurringTransaction(name: "Rent", amount: 50, type: .expense,
+                                        categoryRaw: ExpenseCategory.bills.rawValue, paymentMethod: .bank,
+                                        currencyCode: "USD", merchant: "Landlord", notes: "", frequency: .monthly,
+                                        nextDate: calendar.date(byAdding: .day, value: 2, to: now)!)
+        let goal = SavingsGoal(id: UUID(), name: "Trip", targetAmount: 200, savedAmount: 50,
+                               currencyCode: "USD", targetDate: calendar.date(byAdding: .day, value: -1, to: now))
+        let actions = FinancialActionCalculator.actions(
+            transactions: [expense], monthlyBudget: 100,
+            categoryBudgets: [.init(categoryID: ExpenseCategory.food.rawValue, currencyCode: "USD", amount: 100)],
+            schedules: [bill], savingsGoals: [goal], currencyCode: "USD", now: now, calendar: calendar
+        )
+        XCTAssertEqual(actions.first?.kind, .budgetRisk)
+        XCTAssertTrue(actions.contains { $0.kind == .upcomingBill })
+        XCTAssertTrue(actions.contains { $0.kind == .incompleteEntry && $0.transactionID == expense.id })
+        XCTAssertTrue(actions.contains { $0.kind == .savingsGoal })
+        XCTAssertEqual(actions, actions.sorted { $0.priority > $1.priority })
+    }
 }
